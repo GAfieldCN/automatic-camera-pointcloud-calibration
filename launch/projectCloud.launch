@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  
+    <param name="intrinsic_path"        value="$(find automatic-camera-pointcloud-calibration)/data/parameters/intrinsic.txt" />  <!-- intrinsic file -->
+    <param name="extrinsic_path"        value="$(find automatic-camera-pointcloud-calibration)/data/parameters/extrinsic.txt" />  <!-- extrinsic file -->
+    
+    <param name="input_bag_path"        value="$(find automatic-camera-pointcloud-calibration)/data/lidar/3.bag" />  <!-- rosbag file -->
+    <param name="input_photo_path"      value="$(find automatic-camera-pointcloud-calibration)/data/photo/3.jpg" />  <!-- photo file -->
+    <param name="output_path"           value="$(find automatic-camera-pointcloud-calibration)/data/projection/calib_project.bmp" />  <!-- path to save new photo file -->
+
+    <param name="threshold_lidar"       type="int" value="400000" />  <!-- the maximum points shown on the photo -->
+
+    <node pkg="automatic-camera-pointcloud-calibration" name="projectCloud" type="projectCloud" output="screen"></node>
+
+</launch>
+
