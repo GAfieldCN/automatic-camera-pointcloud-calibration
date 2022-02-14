@@ -28,6 +28,8 @@ struct point_type{
     double reflectivity;
 };
 
+//test
+
 const int plane_size = 3, line_size = 11;
 point_type point;
 vector<point_type> points, temp_points, frontier_points, plane, filtered_points1, filtered_points2;
