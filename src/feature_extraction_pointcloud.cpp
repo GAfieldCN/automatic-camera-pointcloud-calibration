@@ -440,7 +440,7 @@ int main(int argc, char **argv) {
 //    }
 
     //! Debug process
-    std::ifstream fin("/home/ljh/catkin_ws/src/automatic-camera-pointcloud-calibration/data/temp.txt", std::ios::in);
+    std::ifstream fin("/home/gnc/catkin_ws/src/automatic-camera-pointcloud-calibration/data/temp.txt", std::ios::in);
     char line[1024]={0};
     std::string xx = "";
     std::string yy = "";

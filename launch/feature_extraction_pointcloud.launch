@@ -2,7 +2,7 @@
 <launch>
 
    <!--  <param name="input_bag_path"        value="$(find automatic-camera-pointcloud-calibration)/data/lidar/3.bag" />   rosbag file -->
-    <param name="input_bag_path"        value="/home/ljh/3.bag" />
+    <param name="input_bag_path"        value="/home/gnc/3.bag" />
     <param name="temp_path"           value="$(find automatic-camera-pointcloud-calibration)/data/temp.txt" />  <!-- path to save new photo file -->
     <param name="output_path"           value="$(find automatic-camera-pointcloud-calibration)/data/projection/calib_project.bmp" />  <!-- path to save new photo file -->
 
