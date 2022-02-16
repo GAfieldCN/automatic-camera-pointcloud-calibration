@@ -223,11 +223,9 @@ vector<double> RANSAC_Line(vector<point_type> &one_plane, int size, int size_old
 
 
         for (auto iter = one_plane.begin(); iter != one_plane.end(); ++iter) {
-//            double dis = abs((y1 - iter->y)*c - (z1 - iter->z)*b + (x1 - iter->x)*b - (y1 - iter->y)*a
-//                    + (z1 - iter->z)*a - (x1 - iter->x)*c);
             double dis = norm3((y1 - iter->y)*c - (z1 - iter->z)*b , (x1 - iter->x)*b - (y1 - iter->y)*a
                              , (z1 - iter->z)*a - (x1 - iter->x)*c);
-            if (dis < threshold_dis) index.push_back(iter - one_plane.begin());
+            if (dis < threshold_dis && iter - one_plane.begin() != index[0] && iter - one_plane.begin() != index[1]) index.push_back(iter - one_plane.begin());
         }
 
 //        for (auto it = 0; it < index.size(); it++) {
@@ -252,15 +250,12 @@ vector<double> RANSAC_Line(vector<point_type> &one_plane, int size, int size_old
         }
     }
 
-    //cout << "line size = " << index_out_line.size() << endl;
-
     sort(index_out_line.begin(), index_out_line.end());
 
 
     for (int p = index_out_line.size() - 1 ; p > - 1; p --){
         one_plane.erase(one_plane.begin() + index_out_line[p]);
     }
-
     return out;
 }
 
@@ -538,14 +533,14 @@ int main(int argc, char **argv) {
         for (int j = 0; j < line_size; j++){
             line_param.clear();
             line_param = RANSAC_Line(planes[i], 2, 2, 0.01, 0.2, 10000);
-            cout << "Plane "  << i+1 << " ,line " << j+1 << " direction:\t";
+            cout << "Plane "  << i+1 << ", line " << j+1 << " direction:\t";
             printf("%.3f, %.3f, %.3f\n", line_param[3],line_param[4],line_param[5]);
             point_plane.x = line_param[0];
             point_plane.y = line_param[1];
             point_plane.z = line_param[2];
             SetLine(marker_line[i*line_size+j], i*line_size+j, 0.01, rand() % 255, rand() % 255, rand() % 255);
             marker_line[i*line_size+j].points.push_back(point_plane);
-            double line_step = 10;
+            double line_step = 0.5;
             for (int k = 0 ; k < 5; k++){
                 point_plane.x = line_param[0] + line_step * line_param[3];
                 point_plane.y = line_param[1] + line_step * line_param[4];
