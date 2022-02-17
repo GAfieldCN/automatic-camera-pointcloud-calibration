@@ -509,32 +509,16 @@ int main(int argc, char **argv) {
     ** Corner feature extraction **
     ****************************/
 
-//    vector<double> line_param;
-//    line_param = RANSAC_Line(planes[0], 2, 2, 0.01, 0.2, 10000);
-//
-//    point_plane.x = line_param[0];
-//    point_plane.y = line_param[1];
-//    point_plane.z = line_param[2];
-//    SetLine(marker_line[0], 0, 0.01, rand() % 255, rand() % 255, rand() % 255);
-//    marker_line[0].points.push_back(point_plane);
-//    for (int k = 0 ; k < 100; k++){
-//        point_plane.x = line_param[0] + 5 * line_param[3];
-//        point_plane.y = line_param[1] + 5 * line_param[4];
-//        point_plane.z = line_param[2] + 5 * line_param[5];
-//        marker_line[0].points.push_back(point_plane);
-//        point_plane.x = line_param[0] - 5 * line_param[3];
-//        point_plane.y = line_param[1] - 5 * line_param[4];
-//        point_plane.z = line_param[2] - 5 * line_param[5];
-//        marker_line[0].points.push_back(point_plane);
-//    }
-
     vector<double> line_param;
+    vector< vector <double> > line_params[plane_size];
     for (int i = 0; i < plane_size; i++){
         for (int j = 0; j < line_size; j++){
             line_param.clear();
             line_param = RANSAC_Line(planes[i], 2, 2, 0.01, 0.2, 10000);
             cout << "Plane "  << i+1 << ", line " << j+1 << " direction:\t";
             printf("%.3f, %.3f, %.3f\n", line_param[3],line_param[4],line_param[5]);
+            line_params[i].push_back(line_param);
+
             point_plane.x = line_param[0];
             point_plane.y = line_param[1];
             point_plane.z = line_param[2];
@@ -553,6 +537,8 @@ int main(int argc, char **argv) {
             }
         }
     }
+
+
 
 
 
