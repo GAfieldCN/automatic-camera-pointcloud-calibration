@@ -28,7 +28,7 @@ struct point_type{
     double reflectivity;
 };
 
-const int plane_size = 3, line_size = 11;
+const int plane_size = 3, line_size = 12;
 point_type point;
 vector<point_type> points, temp_points, frontier_points, plane, filtered_points1, filtered_points2;
 vector<vector<point_type>> planes;
@@ -240,7 +240,7 @@ vector<double> RANSAC_Line(vector<point_type> &one_plane, int size, int size_old
         //cout << "sizeold = " << size_old << endl;
        // cout << "indexsize = " << index.size() << endl;
 
-        if (index.size() > size_old) {
+        if (index.size() > size_old && abs(a)+abs(b)+abs(c) < 1.2) {
             size_old = index.size();
             index_out_line = index;
 
