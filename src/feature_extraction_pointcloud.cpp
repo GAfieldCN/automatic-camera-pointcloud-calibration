@@ -33,6 +33,13 @@ point_type point;
 vector<point_type> points, temp_points, frontier_points, plane, filtered_points1, filtered_points2;
 vector<vector<point_type>> planes;
 geometry_msgs::Point point_cloud, frontier, point_plane, point_line, filter;
+
+vector<double> plane_param;
+vector< vector<double> > plane_params;
+vector<double> line_param;
+vector< vector <double> > horizontal_line_params[plane_size];
+vector< vector <double> > verticle_line_params[plane_size];
+
 vector<geometry_msgs::Point> point_clouds;
 visualization_msgs::Marker marker_pointcloud, marker_frontier, marker_plane[plane_size], marker_line[line_size*plane_size], marker_filter;
 vector<visualization_msgs::Marker> marker_planes;
@@ -184,15 +191,18 @@ vector<int> RANSAC_Plane(int size, int size_old, double threshold_dis, double th
         auto out_std = sqrt(out_accum / (index.size() - 1));
 
         if (index.size() > size_old && out_std < threshold_std) {
+            plane_param.clear();
+            plane_param.push_back(a);plane_param.push_back(b);plane_param.push_back(c);plane_param.push_back(d);
             size_old = index.size();
             index_out = index;
         }
     }
 
+    plane_params.push_back(plane_param);
     return index_out;
 }
 
-vector<double> RANSAC_Line(vector<point_type> &one_plane, int size, int size_old, double threshold_dis, double threshold_std, long int max_iter){
+vector<double> RANSAC_Line(vector<point_type> &one_plane, vector<double> param, int size, int size_old, double threshold_dis, double threshold_std, long int max_iter){
 
     double a, b, c;
     double out_sum, out_accum;
@@ -245,8 +255,13 @@ vector<double> RANSAC_Line(vector<point_type> &one_plane, int size, int size_old
             index_out_line = index;
 
             out.clear();
+            cout << "yuan " << x1 << " " << y1 <<" " << z1 << endl;
+            double xp = ((param[1]*param[1]+param[2]*param[2])*x1-param[0]*(param[1]*y1+param[2]*z1+param[3]))/(param[0]*param[0]+param[1]*param[1]+param[2]*param[2]);
+            double yp = ((param[0]*param[0]+param[2]*param[2])*y1-param[1]*(param[0]*x1+param[2]*z1+param[3]))/(param[0]*param[0]+param[1]*param[1]+param[2]*param[2]);
+            double zp = ((param[0]*param[0]+param[1]*param[1])*z1-param[2]*(param[0]*x1+param[1]*y1+param[3]))/(param[0]*param[0]+param[1]*param[1]+param[2]*param[2]);
+            cout << "proje " << xp << " " << yp <<" " << zp << endl;
             out.push_back(x1); out.push_back(y1); out.push_back(z1);
-            out.push_back(a) ; out.push_back(b) ; out.push_back(c);
+            out.push_back(a) ; out.push_back(b) ; out.push_back(c); out.push_back(index.size());
         }
     }
 
@@ -509,15 +524,27 @@ int main(int argc, char **argv) {
     ** Corner feature extraction **
     ****************************/
 
-    vector<double> line_param;
-    vector< vector <double> > line_params[plane_size];
+    double horizontal_sum[plane_size], verticle_sum[plane_size];
     for (int i = 0; i < plane_size; i++){
         for (int j = 0; j < line_size; j++){
             line_param.clear();
-            line_param = RANSAC_Line(planes[i], 2, 2, 0.01, 0.2, 10000);
+            line_param = RANSAC_Line(planes[i], plane_params[i], 2, 2, 0.01, 0.2, 10000);
             cout << "Plane "  << i+1 << ", line " << j+1 << " direction:\t";
             printf("%.3f, %.3f, %.3f\n", line_param[3],line_param[4],line_param[5]);
-            line_params[i].push_back(line_param);
+            cout << "Point:\t";
+            printf("%.3f, %.3f, %.3f, num = %.1f\n", line_param[0],line_param[1],line_param[2],line_param[6]);
+
+            if (abs(line_param[5])-1 > -0.2) {
+                if (line_param[5] > 0) {verticle_line_params[i].push_back(line_param);verticle_sum[i] += line_param[6];}
+                else if (line_param[5] < 0) {line_param[3] = -line_param[3];line_param[4] = -line_param[4];line_param[5] = -line_param[5];
+                    verticle_line_params[i].push_back(line_param);verticle_sum[i] += line_param[6];}
+            }
+
+            if (abs(line_param[4])-1 > -0.2) {
+                if (line_param[4] > 0) {horizontal_line_params[i].push_back(line_param);horizontal_sum[i] += line_param[6];}
+                else if (line_param[4] < 0) {line_param[3] = -line_param[3];line_param[4] = -line_param[4];line_param[5] = -line_param[5];
+                    horizontal_line_params[i].push_back(line_param);horizontal_sum[i] += line_param[6];}
+            }
 
             point_plane.x = line_param[0];
             point_plane.y = line_param[1];
@@ -538,6 +565,27 @@ int main(int argc, char **argv) {
         }
     }
 
+    Eigen::Vector3d horizontal[plane_size], verticle[plane_size];
+    double hor_x, hor_y, hor_z, ver_x, ver_y, ver_z;
+    for (int i = 0; i < 3; i++){
+        hor_x = 0; hor_y = 0; hor_z = 0;
+        for (int j = 0; j < horizontal_line_params[i].size(); j++){
+            hor_x += (horizontal_line_params[i][j][3] * horizontal_line_params[i][j][6]/horizontal_sum[i]);
+            hor_y += (horizontal_line_params[i][j][4] * horizontal_line_params[i][j][6]/horizontal_sum[i]);
+            hor_z += (horizontal_line_params[i][j][5] * horizontal_line_params[i][j][6]/horizontal_sum[i]);
+        }
+        horizontal[i] << hor_x, hor_y, hor_z;
+        cout << "Plane " << i+1 << " horizontal vector:\t" << horizontal[i].transpose() << endl;
+
+        ver_x = 0; ver_y = 0; ver_z = 0;
+        for (int j = 0; j < verticle_line_params[i].size(); j++){
+            ver_x += (verticle_line_params[i][j][3] * verticle_line_params[i][j][6]/verticle_sum[i]);
+            ver_y += (verticle_line_params[i][j][4] * verticle_line_params[i][j][6]/verticle_sum[i]);
+            ver_z += (verticle_line_params[i][j][5] * verticle_line_params[i][j][6]/verticle_sum[i]);
+        }
+        verticle[i] << ver_x, ver_y, ver_z;
+        cout << "Plane " << i+1 << " verticle vector:\t" << verticle[i].transpose() << endl;
+    }
 
 
 
