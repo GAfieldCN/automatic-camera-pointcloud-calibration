@@ -38,7 +38,7 @@ vector<double> plane_param;
 vector< vector<double> > plane_params;
 vector<double> line_param;
 vector< vector <double> > horizontal_line_params[plane_size];
-vector< vector <double> > verticle_line_params[plane_size];
+vector< vector <double> > vertical_line_params[plane_size];
 
 vector<geometry_msgs::Point> point_clouds;
 visualization_msgs::Marker marker_pointcloud, marker_frontier, marker_plane[plane_size], marker_line[line_size*plane_size], marker_filter;
@@ -238,29 +238,16 @@ vector<double> RANSAC_Line(vector<point_type> &one_plane, vector<double> param, 
             if (dis < threshold_dis && iter - one_plane.begin() != index[0] && iter - one_plane.begin() != index[1]) index.push_back(iter - one_plane.begin());
         }
 
-//        for (auto it = 0; it < index.size(); it++) {
-//            out_sum += one_plane[index[it]].y;
-//        }
-//
-//        for (auto it = 0; it < index.size(); it++) {
-//            out_accum += pow(one_plane[index[it]].y - (out_sum / index.size()), 2);
-//        }
-//
-//        auto out_std = sqrt(out_accum / (index.size() - 1));
-        //cout << "sizeold = " << size_old << endl;
-       // cout << "indexsize = " << index.size() << endl;
 
         if (index.size() > size_old && abs(a)+abs(b)+abs(c) < 1.2) {
             size_old = index.size();
             index_out_line = index;
 
             out.clear();
-            cout << "yuan " << x1 << " " << y1 <<" " << z1 << endl;
             double xp = ((param[1]*param[1]+param[2]*param[2])*x1-param[0]*(param[1]*y1+param[2]*z1+param[3]))/(param[0]*param[0]+param[1]*param[1]+param[2]*param[2]);
             double yp = ((param[0]*param[0]+param[2]*param[2])*y1-param[1]*(param[0]*x1+param[2]*z1+param[3]))/(param[0]*param[0]+param[1]*param[1]+param[2]*param[2]);
             double zp = ((param[0]*param[0]+param[1]*param[1])*z1-param[2]*(param[0]*x1+param[1]*y1+param[3]))/(param[0]*param[0]+param[1]*param[1]+param[2]*param[2]);
-            cout << "proje " << xp << " " << yp <<" " << zp << endl;
-            out.push_back(x1); out.push_back(y1); out.push_back(z1);
+            out.push_back(xp); out.push_back(yp); out.push_back(zp);
             out.push_back(a) ; out.push_back(b) ; out.push_back(c); out.push_back(index.size());
         }
     }
@@ -524,8 +511,9 @@ int main(int argc, char **argv) {
     ** Corner feature extraction **
     ****************************/
 
-    double horizontal_sum[plane_size], verticle_sum[plane_size];
+    double horizontal_sum[plane_size], vertical_sum[plane_size];
     for (int i = 0; i < plane_size; i++){
+        horizontal_sum[i] = 0; vertical_sum[i] = 0;
         for (int j = 0; j < line_size; j++){
             line_param.clear();
             line_param = RANSAC_Line(planes[i], plane_params[i], 2, 2, 0.01, 0.2, 10000);
@@ -535,15 +523,17 @@ int main(int argc, char **argv) {
             printf("%.3f, %.3f, %.3f, num = %.1f\n", line_param[0],line_param[1],line_param[2],line_param[6]);
 
             if (abs(line_param[5])-1 > -0.2) {
-                if (line_param[5] > 0) {verticle_line_params[i].push_back(line_param);verticle_sum[i] += line_param[6];}
+                if (line_param[5] > 0) {vertical_line_params[i].push_back(line_param);}
                 else if (line_param[5] < 0) {line_param[3] = -line_param[3];line_param[4] = -line_param[4];line_param[5] = -line_param[5];
-                    verticle_line_params[i].push_back(line_param);verticle_sum[i] += line_param[6];}
+                    vertical_line_params[i].push_back(line_param);}
+                vertical_sum[i] += line_param[6];
             }
 
             if (abs(line_param[4])-1 > -0.2) {
-                if (line_param[4] > 0) {horizontal_line_params[i].push_back(line_param);horizontal_sum[i] += line_param[6];}
+                if (line_param[4] > 0) {horizontal_line_params[i].push_back(line_param);}
                 else if (line_param[4] < 0) {line_param[3] = -line_param[3];line_param[4] = -line_param[4];line_param[5] = -line_param[5];
-                    horizontal_line_params[i].push_back(line_param);horizontal_sum[i] += line_param[6];}
+                    horizontal_line_params[i].push_back(line_param);}
+                horizontal_sum[i] += line_param[6];
             }
 
             point_plane.x = line_param[0];
@@ -565,9 +555,9 @@ int main(int argc, char **argv) {
         }
     }
 
-    Eigen::Vector3d horizontal[plane_size], verticle[plane_size];
+    Eigen::Vector3d horizontal[plane_size], vertical[plane_size], plane_norm[plane_size];
     double hor_x, hor_y, hor_z, ver_x, ver_y, ver_z;
-    for (int i = 0; i < 3; i++){
+    for (int i = 0; i < plane_size; i++){
         hor_x = 0; hor_y = 0; hor_z = 0;
         for (int j = 0; j < horizontal_line_params[i].size(); j++){
             hor_x += (horizontal_line_params[i][j][3] * horizontal_line_params[i][j][6]/horizontal_sum[i]);
@@ -575,17 +565,57 @@ int main(int argc, char **argv) {
             hor_z += (horizontal_line_params[i][j][5] * horizontal_line_params[i][j][6]/horizontal_sum[i]);
         }
         horizontal[i] << hor_x, hor_y, hor_z;
+        plane_norm[i] << plane_params[i][0], plane_params[i][1],plane_params[i][2];
+        plane_norm[i] = plane_norm[i].normalized();
+        cout << "Plane " << i+1 << " normal vector:\t" << plane_norm[i].transpose() << endl;
+        horizontal[i] = horizontal[i] - (horizontal[i].dot(plane_norm[i]) * plane_norm[i] / pow(plane_norm[i].norm(),2));
         cout << "Plane " << i+1 << " horizontal vector:\t" << horizontal[i].transpose() << endl;
 
         ver_x = 0; ver_y = 0; ver_z = 0;
-        for (int j = 0; j < verticle_line_params[i].size(); j++){
-            ver_x += (verticle_line_params[i][j][3] * verticle_line_params[i][j][6]/verticle_sum[i]);
-            ver_y += (verticle_line_params[i][j][4] * verticle_line_params[i][j][6]/verticle_sum[i]);
-            ver_z += (verticle_line_params[i][j][5] * verticle_line_params[i][j][6]/verticle_sum[i]);
+        for (int j = 0; j < vertical_line_params[i].size(); j++){
+            ver_x += (vertical_line_params[i][j][3] * vertical_line_params[i][j][6]/vertical_sum[i]);
+            ver_y += (vertical_line_params[i][j][4] * vertical_line_params[i][j][6]/vertical_sum[i]);
+            ver_z += (vertical_line_params[i][j][5] * vertical_line_params[i][j][6]/vertical_sum[i]);
         }
-        verticle[i] << ver_x, ver_y, ver_z;
-        cout << "Plane " << i+1 << " verticle vector:\t" << verticle[i].transpose() << endl;
+        vertical[i] << ver_x, ver_y, ver_z;
+        vertical[i] = vertical[i] - (vertical[i].dot(plane_norm[i]) * plane_norm[i] / pow(plane_norm[i].norm(),2));
+        cout << "Plane " << i+1 << " vertical vector:\t" << vertical[i].transpose() << endl;
     }
+
+
+    Eigen::Vector3d line_direction;
+    for (int i = 0; i < plane_size; i++){
+        if (vertical_line_params[i].size() > 7 || horizontal_line_params[i].size() > 7){
+            ROS_ERROR("Corner extraction failed! Please try again...");
+            exit(1);
+        }
+
+        double parallel_min = 1; int ho_index, ver_index;
+        if (horizontal_line_params[i].size() == 7){
+            for (int j = 0; j < horizontal_line_params[i].size(); j++){
+                line_direction << horizontal_line_params[i][j][3], horizontal_line_params[i][j][4], horizontal_line_params[i][j][5];
+                auto parallel = horizontal[i].dot(line_direction);
+                if (parallel < parallel_min) parallel_min = parallel; ho_index = j;
+            }
+            if (parallel_min < 0.99) horizontal_line_params[i].erase(horizontal_line_params[i].begin() + ho_index);
+        }
+
+        parallel_min = 1;
+        if (vertical_line_params[i].size() == 7){
+            for (int j = 0; j < vertical_line_params[i].size(); j++) {
+                line_direction
+                        << vertical_line_params[i][j][3], vertical_line_params[i][j][4], vertical_line_params[i][j][5];
+                auto parallel = vertical[i].dot(line_direction);
+                if (parallel < parallel_min) parallel_min = parallel; ver_index = j;
+            }
+            if (parallel_min < 0.99) vertical_line_params[i].erase(vertical_line_params[i].begin() + ver_index);
+
+        }
+
+        cout << "Plane " << i+1 << " horizontal line num = " << horizontal_line_params[i].size() << endl;
+        cout << "Plane " << i+1 << " vertical line num = " << vertical_line_params[i].size() << endl;
+    }
+
 
 
 
