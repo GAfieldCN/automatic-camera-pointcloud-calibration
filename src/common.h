@@ -297,18 +297,24 @@ double norm3(double x1, double x2, double x3)
 }
 
 float getDist_P2L(CvPoint pointP, CvPoint pointA, CvPoint pointB)
-{//点到直线的距离:P到AB的距离
-    //求直线方程
+{
     int A = 0, B = 0, C = 0;
     A = pointA.y - pointB.y;
     B = pointB.x - pointA.x;
     C = pointA.x*pointB.y - pointA.y*pointB.x;
-    //代入点到直线距离公式
     float distance = 0;
     distance = ((float)abs(A*pointP.x + B*pointP.y + C)) / ((float)sqrtf(A*A + B*B));
     return distance;
 }
 
+//! direction vector should be normalized
+double dis_P2L_3d(double x, double y, double z, double x0, double y0, double z0, double dir_x, double dir_y, double dir_z)
+{
+    double distance = 0;
+    distance = norm3((y0 - y)*dir_z - (z0 - z)*dir_y , (x0 - x)*dir_y - (y0 - y)*dir_x
+            , (z0 - z)*dir_x - (x0 - x)*dir_z);
+    return distance;
+}
 
 //对角点进行排序，因为之前检测出的轮廓是带序号的
 size_t list_connor(size_t i1, size_t i2, size_t i3)

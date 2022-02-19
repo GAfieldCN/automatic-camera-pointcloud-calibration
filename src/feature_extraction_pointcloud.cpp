@@ -47,6 +47,7 @@ vector<visualization_msgs::Marker> marker_planes;
 vector<livox_ros_driver::CustomMsg> lidar_datas;
 int threshold_lidar;  // number of cloud point on the photo
 string input_bag_path, input_photo_path, output_path, intrinsic_path, extrinsic_path, temp_path;
+double square_length, board_length;
 
 void SetPoint(visualization_msgs::Marker &point, int id, float scale, float r, float g, float b)
 {
@@ -119,6 +120,7 @@ void loadPointcloudFromROSBag(const string& bag_path) {
     }
     cout << "Loading rosbag successes" << endl;
 }
+
 void getParameters() {
     cout << "Get the parameters from the launch file" << endl;
 
@@ -138,6 +140,22 @@ void getParameters() {
         cout << "Can not get the value of threshold_lidar" << endl;
         exit(1);
     }
+    if (!ros::param::get("square_length", square_length)) {
+        cout << "Can not get the value of square_length" << endl;
+        exit(1);
+    }
+    if (!ros::param::get("board_length", board_length)) {
+        cout << "Can not get the value of board_length" << endl;
+        exit(1);
+    }
+}
+
+bool hor_sort (vector <double> a, vector <double> b){
+    return (a[2] > b[2]);
+}
+
+bool ver_sort (vector <double> a, vector <double> b){
+    return (a[1] > b[1]);
 }
 
 vector<int> RANSAC_Plane(int size, int size_old, double threshold_dis, double threshold_std, long int max_iter, int allow_num){
@@ -233,8 +251,7 @@ vector<double> RANSAC_Line(vector<point_type> &one_plane, vector<double> param, 
 
 
         for (auto iter = one_plane.begin(); iter != one_plane.end(); ++iter) {
-            double dis = norm3((y1 - iter->y)*c - (z1 - iter->z)*b , (x1 - iter->x)*b - (y1 - iter->y)*a
-                             , (z1 - iter->z)*a - (x1 - iter->x)*c);
+            double dis = dis_P2L_3d(iter->x, iter->y, iter->z, x1, y1, z1, a, b, c);
             if (dis < threshold_dis && iter - one_plane.begin() != index[0] && iter - one_plane.begin() != index[1]) index.push_back(iter - one_plane.begin());
         }
 
@@ -276,6 +293,7 @@ int main(int argc, char **argv) {
     ros::Publisher pub_filter = nh.advertise<visualization_msgs::Marker>("/points_filter", 1000);
     ros::Publisher pub_plane = nh.advertise<visualization_msgs::Marker>("/planes", 1000);
     ros::Publisher pub_line = nh.advertise<visualization_msgs::Marker>("/lines", 1000);
+    ros::Publisher pub_result = nh.advertise<visualization_msgs::Marker>("/result", 1000);
 //    ros::Publisher pub_planes[plane_size];
 //    for (int i = 0; i < plane_size; i++){
 //        pub_planes[i] = nh.advertise<visualization_msgs::Marker>("/plane_" + std::to_string(i), 1000);
@@ -568,7 +586,7 @@ int main(int argc, char **argv) {
         plane_norm[i] << plane_params[i][0], plane_params[i][1],plane_params[i][2];
         plane_norm[i] = plane_norm[i].normalized();
         cout << "Plane " << i+1 << " normal vector:\t" << plane_norm[i].transpose() << endl;
-        horizontal[i] = horizontal[i] - (horizontal[i].dot(plane_norm[i]) * plane_norm[i] / pow(plane_norm[i].norm(),2));
+        horizontal[i] = (horizontal[i] - (horizontal[i].dot(plane_norm[i]) * plane_norm[i] / pow(plane_norm[i].norm(),2))).normalized();
         cout << "Plane " << i+1 << " horizontal vector:\t" << horizontal[i].transpose() << endl;
 
         ver_x = 0; ver_y = 0; ver_z = 0;
@@ -578,7 +596,7 @@ int main(int argc, char **argv) {
             ver_z += (vertical_line_params[i][j][5] * vertical_line_params[i][j][6]/vertical_sum[i]);
         }
         vertical[i] << ver_x, ver_y, ver_z;
-        vertical[i] = vertical[i] - (vertical[i].dot(plane_norm[i]) * plane_norm[i] / pow(plane_norm[i].norm(),2));
+        vertical[i] = (vertical[i] - (vertical[i].dot(plane_norm[i]) * plane_norm[i] / pow(plane_norm[i].norm(),2))).normalized();
         cout << "Plane " << i+1 << " vertical vector:\t" << vertical[i].transpose() << endl;
     }
 
@@ -616,6 +634,133 @@ int main(int argc, char **argv) {
         cout << "Plane " << i+1 << " vertical line num = " << vertical_line_params[i].size() << endl;
     }
 
+    // To remove coincide lines and the two edges of the board
+    vector<int> idx_rm_hor, idx_rm_ver;
+    for (int i = 0; i < plane_size; i++) {
+        idx_rm_hor.clear();
+        for (int j = 0; j < horizontal_line_params[i].size(); j++) {
+            for (int k = j + 1; k < horizontal_line_params[i].size(); k++) {
+                auto dis_p2l = dis_P2L_3d(horizontal_line_params[i][k][0], horizontal_line_params[i][k][1],
+                                          horizontal_line_params[i][k][2],
+                                          horizontal_line_params[i][j][0], horizontal_line_params[i][j][1],
+                                          horizontal_line_params[i][j][2],
+                                          horizontal[i][0], horizontal[i][1], horizontal[i][2]);
+                if (dis_p2l < square_length / 3) {
+                    idx_rm_hor.push_back(horizontal_line_params[i][j][6] < horizontal_line_params[i][k][6] ? j : k);
+                }
+                if (dis_p2l > board_length * 0.9) {
+                    idx_rm_hor.push_back(j);
+                    idx_rm_hor.push_back(k);
+                }
+                //cout << "ho " << i << " " << j << " " << k << " " << dis_p2l << endl;
+            }
+        }
+
+        sort(idx_rm_hor.begin(), idx_rm_hor.end());
+        for (int p = idx_rm_hor.size() - 1 ; p > - 1; p --){
+            horizontal_line_params[i].erase(horizontal_line_params[i].begin() + idx_rm_hor[p]);
+        }
+
+        idx_rm_ver.clear();
+        for (int t = 0; t < vertical_line_params[i].size(); t++) {
+            for (int k = t + 1; k < vertical_line_params[i].size(); k++) {
+                auto dis_p2l = dis_P2L_3d(vertical_line_params[i][k][0], vertical_line_params[i][k][1],
+                                          vertical_line_params[i][k][2],
+                                          vertical_line_params[i][t][0], vertical_line_params[i][t][1],
+                                          vertical_line_params[i][t][2],
+                                          vertical[i][0], vertical[i][1], vertical[i][2]);
+                if (dis_p2l < square_length/3) {
+                    idx_rm_ver.push_back(vertical_line_params[i][t][6] < vertical_line_params[i][k][6] ? t : k);
+                }
+                if (dis_p2l > board_length*0.9) {
+                    idx_rm_ver.push_back(t);
+                    idx_rm_ver.push_back(k);
+                }
+                //cout << "ve " << i << " " << t << " " << k << " " << dis_p2l << endl;
+            }
+        }
+
+        sort(idx_rm_ver.begin(), idx_rm_ver.end());
+        for (int p = idx_rm_ver.size() - 1 ; p > - 1; p --){
+            vertical_line_params[i].erase(vertical_line_params[i].begin() + idx_rm_ver[p]);
+        }
+
+        cout << "Plane " << i + 1 << " horizontal line num = " << horizontal_line_params[i].size() << endl;
+        cout << "Plane " << i + 1 << " vertical line num = " << vertical_line_params[i].size() << endl;
+    }
+
+    for (int i = 0; i < plane_size; i++){
+        sort(horizontal_line_params[i].begin(), horizontal_line_params[i].end(), hor_sort);
+        sort(vertical_line_params[i].begin(), vertical_line_params[i].end(), ver_sort);
+//        for (int j = 0; j < horizontal_line_params[i].size(); j ++){
+//            cout << "Plane " << i + 1 << " xyz = " << horizontal_line_params[i][j][2] << endl;
+//        }
+    }
+
+
+    // Situation that only one side of the board is detected
+    for (int i = 0; i < plane_size; i++){
+        if (vertical_line_params[i].size() == 5 ){
+            vertical_line_params[i].erase(vertical_line_params[i].begin() +
+            (vertical_line_params[i][0][6] > vertical_line_params[i][4][6] ? 0 : 4));
+        }
+
+        if (horizontal_line_params[i].size() == 5 ){
+            horizontal_line_params[i].erase(horizontal_line_params[i].begin() +
+            (horizontal_line_params[i][0][6] > horizontal_line_params[i][4][6] ? 0 : 4));
+        }
+
+        if (vertical_line_params[i].size() != 4 || horizontal_line_params[i].size() != 4 ){
+            ROS_ERROR("Corner extraction failed! Please try again...");
+            exit(1);
+        }
+        cout << "Plane " << i + 1 << " horizontal line num = " << horizontal_line_params[i].size() << endl;
+        cout << "Plane " << i + 1 << " vertical line num = " << vertical_line_params[i].size() << endl;
+    }
+
+    visualization_msgs::Marker marker_result[24];
+    for (int i = 0; i < plane_size; i++){
+        for (int j = 0; j < horizontal_line_params[i].size(); j++){
+            point_plane.x = horizontal_line_params[i][j][0];
+            point_plane.y = horizontal_line_params[i][j][1];
+            point_plane.z = horizontal_line_params[i][j][2];
+            SetLine(marker_result[i*4+j], i*4+j, 0.01, rand() % 255, rand() % 255, rand() % 255);
+            marker_result[i*4+j].points.push_back(point_plane);
+            double line_step = 0.5;
+            for (int k = 0 ; k < 5; k++){
+                point_plane.x = horizontal_line_params[i][j][0] + line_step * horizontal[i][0];
+                point_plane.y = horizontal_line_params[i][j][1] + line_step * horizontal[i][1];
+                point_plane.z = horizontal_line_params[i][j][2] + line_step * horizontal[i][2];
+                marker_result[i*4+j].points.push_back(point_plane);
+                point_plane.x = horizontal_line_params[i][j][0] - line_step * horizontal[i][0];
+                point_plane.y = horizontal_line_params[i][j][1] - line_step * horizontal[i][1];
+                point_plane.z = horizontal_line_params[i][j][2] - line_step * horizontal[i][2];
+                marker_result[i*4+j].points.push_back(point_plane);
+            }
+        }
+
+        for (int j = 0; j < vertical_line_params[i].size(); j++){
+            point_plane.x = vertical_line_params[i][j][0];
+            point_plane.y = vertical_line_params[i][j][1];
+            point_plane.z = vertical_line_params[i][j][2];
+            SetLine(marker_result[i*4+j+12], i*4+j+12, 0.01, rand() % 255, rand() % 255, rand() % 255);
+            marker_result[i*4+j+12].points.push_back(point_plane);
+            double line_step = 0.5;
+            for (int k = 0 ; k < 5; k++){
+                point_plane.x = vertical_line_params[i][j][0] + line_step * vertical[i][0];
+                point_plane.y = vertical_line_params[i][j][1] + line_step * vertical[i][1];
+                point_plane.z = vertical_line_params[i][j][2] + line_step * vertical[i][2];
+                marker_result[i*4+j+12].points.push_back(point_plane);
+                point_plane.x = vertical_line_params[i][j][0] - line_step * vertical[i][0];
+                point_plane.y = vertical_line_params[i][j][1] - line_step * vertical[i][1];
+                point_plane.z = vertical_line_params[i][j][2] - line_step * vertical[i][2];
+                marker_result[i*4+j+12].points.push_back(point_plane);
+            }
+        }
+    }
+
+
+
 
 
 
@@ -632,7 +777,10 @@ int main(int argc, char **argv) {
         for (int i = 0; i < plane_size*line_size; i++){
             pub_line.publish(marker_line[i]);
         }
-        //pub_line.publish(marker_line[0]);
+
+        for (int i = 0; i < 24; i++){
+            pub_result.publish(marker_result[i]);
+        }
 
         cout << "Publishing to rostopic!" << endl;
 

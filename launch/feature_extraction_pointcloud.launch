@@ -7,8 +7,11 @@
     <param name="output_path"           value="$(find automatic-camera-pointcloud-calibration)/data/projection/calib_project.bmp" />  <!-- path to save new photo file -->
 
     <param name="threshold_lidar"       type="int" value="1000000" />  <!-- the maximum points shown on the photo -->
+    <param name="square_length"       type="double" value="0.1" />
+    <param name="board_length"       type="double" value="0.5" />
 
-    <node pkg="automatic-camera-pointcloud-calibration" name="feature_extraction_pointcloud" type="feature_extraction_pointcloud" output="screen"></node>
+
+ <node pkg="automatic-camera-pointcloud-calibration" name="feature_extraction_pointcloud" type="feature_extraction_pointcloud" output="screen"></node>
 
 </launch>
 
