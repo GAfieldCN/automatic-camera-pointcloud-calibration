@@ -9,6 +9,7 @@
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
 #include <numeric>
+#include <Eigen/Dense>
 #include "geometry_msgs/Point.h"
 #include "geometry_msgs/PointStamped.h"
 #include "visualization_msgs/Marker.h"
@@ -41,7 +42,7 @@ vector< vector <double> > horizontal_line_params[plane_size];
 vector< vector <double> > vertical_line_params[plane_size];
 
 vector<geometry_msgs::Point> point_clouds;
-visualization_msgs::Marker marker_pointcloud, marker_frontier, marker_plane[plane_size], marker_line[line_size*plane_size], marker_filter;
+visualization_msgs::Marker marker_pointcloud, marker_frontier, marker_filter, marker_plane[plane_size], marker_line[line_size*plane_size], marker_corners;
 vector<visualization_msgs::Marker> marker_planes;
 
 vector<livox_ros_driver::CustomMsg> lidar_datas;
@@ -49,7 +50,7 @@ int threshold_lidar;  // number of cloud point on the photo
 string input_bag_path, input_photo_path, output_path, intrinsic_path, extrinsic_path, temp_path;
 double square_length, board_length;
 
-void SetPoint(visualization_msgs::Marker &point, int id, float scale, float r, float g, float b)
+void SetMarker(visualization_msgs::Marker &point, int id, int type, float scale, float r, float g, float b)
 {
     point.header.frame_id = "map";
     point.header.stamp = ros::Time::now();
@@ -60,7 +61,8 @@ void SetPoint(visualization_msgs::Marker &point, int id, float scale, float r, f
 
     point.action = point.ADD;
 
-    point.type  = visualization_msgs::Marker::POINTS;
+    //point.type  = visualization_msgs::Marker::POINTS;
+    point.type  = type;
 
     point.scale.x = scale; //node:0.08
     point.scale.y = scale;
@@ -73,29 +75,29 @@ void SetPoint(visualization_msgs::Marker &point, int id, float scale, float r, f
     point.color.a = 255.0/255.0;
 }
 
-void SetLine(visualization_msgs::Marker &point, int id, float scale, float r, float g, float b)
-{
-    point.header.frame_id = "map";
-    point.header.stamp = ros::Time::now();
-    point.ns = "visualization";
-    point.pose.orientation.w = 1.0;
-
-    point.id = id;
-
-    point.action = point.ADD;
-
-    point.type  = visualization_msgs::Marker::LINE_STRIP;
-
-    point.scale.x = scale; //node:0.08
-    point.scale.y = scale;
-
-    point.lifetime = ros::Duration();
-
-    point.color.r = r / 255.0;  //255
-    point.color.g = g / 255.0;  //69
-    point.color.b = b / 255.0;  //0
-    point.color.a = 255.0/255.0;
-}
+//void SetLine(visualization_msgs::Marker &point, int id, float scale, float r, float g, float b)
+//{
+//    point.header.frame_id = "map";
+//    point.header.stamp = ros::Time::now();
+//    point.ns = "visualization";
+//    point.pose.orientation.w = 1.0;
+//
+//    point.id = id;
+//
+//    point.action = point.ADD;
+//
+//    point.type  = visualization_msgs::Marker::LINE_STRIP;
+//
+//    point.scale.x = scale; //node:0.08
+//    point.scale.y = scale;
+//
+//    point.lifetime = ros::Duration();
+//
+//    point.color.r = r / 255.0;  //255
+//    point.color.g = g / 255.0;  //69
+//    point.color.b = b / 255.0;  //0
+//    point.color.a = 255.0/255.0;
+//}
 
 void loadPointcloudFromROSBag(const string& bag_path) {
     ROS_INFO("Start to load the rosbag %s", bag_path.c_str());
@@ -293,15 +295,17 @@ int main(int argc, char **argv) {
     ros::Publisher pub_filter = nh.advertise<visualization_msgs::Marker>("/points_filter", 1000);
     ros::Publisher pub_plane = nh.advertise<visualization_msgs::Marker>("/planes", 1000);
     ros::Publisher pub_line = nh.advertise<visualization_msgs::Marker>("/lines", 1000);
+    ros::Publisher pub_corner = nh.advertise<visualization_msgs::Marker>("/corners", 1000);
     ros::Publisher pub_result = nh.advertise<visualization_msgs::Marker>("/result", 1000);
 //    ros::Publisher pub_planes[plane_size];
 //    for (int i = 0; i < plane_size; i++){
 //        pub_planes[i] = nh.advertise<visualization_msgs::Marker>("/plane_" + std::to_string(i), 1000);
 //    }
 
-    SetPoint(marker_pointcloud, 0, 0.01, 255, 200, 8);
-    SetPoint(marker_frontier, 0, 0.01, 255, 0, 0);
-    SetPoint(marker_filter, 0, 0.01, 0, 255, 0);
+    SetMarker(marker_pointcloud, 0, 7, 0.01, 255, 200, 8);
+    SetMarker(marker_frontier, 0, 7, 0.01, 255, 0, 0);
+    SetMarker(marker_filter, 0, 7, 0.01, 0, 255, 0);
+    SetMarker(marker_corners, 0, 7, 0.03, 255, 10, 10);
 
 //   loadPointcloudFromROSBag(input_bag_path);
 //    int myCount = 0;
@@ -502,7 +506,7 @@ int main(int argc, char **argv) {
         index = RANSAC_Plane(3, 3, 0.02, 0.2, 10000, 1000);
         cout << "Plane " << i+1 << " has " << index.size() << " points" << endl;
         plane_index.push_back(index);
-        SetPoint(marker_plane[i], i, 0.01, rand() % 255, rand() % 255, rand() % 255);
+        SetMarker(marker_plane[i], i, 7, 0.015, rand() % 255, rand() % 255, rand() % 255);
 //        SetPoint(marker_plane[0], 0, 0.01, 255, 239, 213);
 //        SetPoint(marker_plane[1], 0, 0.01, 255, 215, 2);
 //        SetPoint(marker_plane[2], 0, 0.01, 2, 191, 255);
@@ -526,7 +530,7 @@ int main(int argc, char **argv) {
 
 
     /***************************
-    ** Corner feature extraction **
+    ****** Line Detection ******
     ****************************/
 
     double horizontal_sum[plane_size], vertical_sum[plane_size];
@@ -557,7 +561,7 @@ int main(int argc, char **argv) {
             point_plane.x = line_param[0];
             point_plane.y = line_param[1];
             point_plane.z = line_param[2];
-            SetLine(marker_line[i*line_size+j], i*line_size+j, 0.01, rand() % 255, rand() % 255, rand() % 255);
+            SetMarker(marker_line[i*line_size+j], i*line_size+j, 4, 0.01, rand() % 255, rand() % 255, rand() % 255);
             marker_line[i*line_size+j].points.push_back(point_plane);
             double line_step = 0.5;
             for (int k = 0 ; k < 5; k++){
@@ -699,6 +703,7 @@ int main(int argc, char **argv) {
 
 
     // Situation that only one side of the board is detected
+    vector<Eigen::Vector3d> horizontal_points[plane_size], vertical_points[plane_size];
     for (int i = 0; i < plane_size; i++){
         if (vertical_line_params[i].size() == 5 ){
             vertical_line_params[i].erase(vertical_line_params[i].begin() +
@@ -714,17 +719,45 @@ int main(int argc, char **argv) {
             ROS_ERROR("Corner extraction failed! Please try again...");
             exit(1);
         }
-        cout << "Plane " << i + 1 << " horizontal line num = " << horizontal_line_params[i].size() << endl;
-        cout << "Plane " << i + 1 << " vertical line num = " << vertical_line_params[i].size() << endl;
+
+        for (int j = 0; j < horizontal_line_params[i].size(); j++){
+            Eigen::Vector3d temp;
+            temp << horizontal_line_params[i][j][0], horizontal_line_params[i][j][1],horizontal_line_params[i][j][2];
+            horizontal_points[i].push_back(temp);
+        }
+
+        for (int j = 0; j < vertical_line_params[i].size(); j++){
+            Eigen::Vector3d temp;
+            temp << vertical_line_params[i][j][0], vertical_line_params[i][j][1],vertical_line_params[i][j][2];
+            vertical_points[i].push_back(temp);
+        }
     }
 
-    visualization_msgs::Marker marker_result[24];
+    /***************************
+    ****** Corner Extraction ******
+    ****************************/
+
+    vector<Eigen::Vector3d> corners[plane_size];
+
+    for (int i = 0; i < plane_size; i++){
+        for (int j = 0; j < vertical_points[i].size(); j++){
+            for (int k = 0; k < horizontal_points[i].size(); k++){
+                Eigen::Vector3d temp = vertical_points[i][j] + (horizontal_points[i][k]-vertical_points[i][j]).cross(horizontal[i]).dot(vertical[i].cross(horizontal[i]))
+                        / vertical[i].cross(horizontal[i]).dot(vertical[i].cross(horizontal[i])) * vertical[i];
+                corners[i].push_back(temp);
+                point_plane.x = temp[0];point_plane.y = temp[1];point_plane.z = temp[2];
+                marker_corners.points.push_back(point_plane);
+            }
+        }
+    }
+
+    visualization_msgs::Marker marker_result[plane_size*8];
     for (int i = 0; i < plane_size; i++){
         for (int j = 0; j < horizontal_line_params[i].size(); j++){
             point_plane.x = horizontal_line_params[i][j][0];
             point_plane.y = horizontal_line_params[i][j][1];
             point_plane.z = horizontal_line_params[i][j][2];
-            SetLine(marker_result[i*4+j], i*4+j, 0.01, rand() % 255, rand() % 255, rand() % 255);
+            SetMarker(marker_result[i*4+j], i*4+j, 4, 0.01, rand() % 255, rand() % 255, rand() % 255);
             marker_result[i*4+j].points.push_back(point_plane);
             double line_step = 0.5;
             for (int k = 0 ; k < 5; k++){
@@ -743,18 +776,18 @@ int main(int argc, char **argv) {
             point_plane.x = vertical_line_params[i][j][0];
             point_plane.y = vertical_line_params[i][j][1];
             point_plane.z = vertical_line_params[i][j][2];
-            SetLine(marker_result[i*4+j+12], i*4+j+12, 0.01, rand() % 255, rand() % 255, rand() % 255);
-            marker_result[i*4+j+12].points.push_back(point_plane);
+            SetMarker(marker_result[i*4+j+4*plane_size], i*4+j+4*plane_size, 4, 0.01, rand() % 255, rand() % 255, rand() % 255);
+            marker_result[i*4+j+4*plane_size].points.push_back(point_plane);
             double line_step = 0.5;
             for (int k = 0 ; k < 5; k++){
                 point_plane.x = vertical_line_params[i][j][0] + line_step * vertical[i][0];
                 point_plane.y = vertical_line_params[i][j][1] + line_step * vertical[i][1];
                 point_plane.z = vertical_line_params[i][j][2] + line_step * vertical[i][2];
-                marker_result[i*4+j+12].points.push_back(point_plane);
+                marker_result[i*4+j+4*plane_size].points.push_back(point_plane);
                 point_plane.x = vertical_line_params[i][j][0] - line_step * vertical[i][0];
                 point_plane.y = vertical_line_params[i][j][1] - line_step * vertical[i][1];
                 point_plane.z = vertical_line_params[i][j][2] - line_step * vertical[i][2];
-                marker_result[i*4+j+12].points.push_back(point_plane);
+                marker_result[i*4+j+4*plane_size].points.push_back(point_plane);
             }
         }
     }
@@ -769,6 +802,7 @@ int main(int argc, char **argv) {
         pub_marker.publish(marker_pointcloud);
         pub_frontier.publish(marker_frontier);
         pub_filter.publish(marker_filter);
+        pub_corner.publish(marker_corners);
 
         for (int i = 0; i < plane_size; i++){
             pub_plane.publish(marker_plane[i]);
@@ -778,7 +812,7 @@ int main(int argc, char **argv) {
             pub_line.publish(marker_line[i]);
         }
 
-        for (int i = 0; i < 24; i++){
+        for (int i = 0; i < plane_size*8; i++){
             pub_result.publish(marker_result[i]);
         }
 
