@@ -459,7 +459,7 @@ int main(int argc, char **argv) {
 //    }
 
     //! Debug process
-    std::ifstream fin("/home/gnc/catkin_ws/src/automatic-camera-pointcloud-calibration/data/temp.txt", std::ios::in);
+    std::ifstream fin("/home/ljh/catkin_ws/src/automatic-camera-pointcloud-calibration/data/temp.txt", std::ios::in);
     char line[1024]={0};
     std::string xx = "";
     std::string yy = "";
@@ -738,12 +738,18 @@ int main(int argc, char **argv) {
     ****************************/
 
     vector<Eigen::Vector3d> corners[plane_size];
+    ofstream outfile(output_path.c_str());
+    if (!outfile) {
+        cout << "Can not open the output file" << endl;
+        exit(0);
+    }
 
     for (int i = 0; i < plane_size; i++){
         for (int j = 0; j < vertical_points[i].size(); j++){
             for (int k = 0; k < horizontal_points[i].size(); k++){
                 Eigen::Vector3d temp = vertical_points[i][j] + (horizontal_points[i][k]-vertical_points[i][j]).cross(horizontal[i]).dot(vertical[i].cross(horizontal[i]))
                         / vertical[i].cross(horizontal[i]).dot(vertical[i].cross(horizontal[i])) * vertical[i];
+                outfile << temp.x() << "   " << temp.y() << "   " << temp.z() << endl;
                 corners[i].push_back(temp);
                 point_plane.x = temp[0];point_plane.y = temp[1];point_plane.z = temp[2];
                 marker_corners.points.push_back(point_plane);
@@ -751,49 +757,36 @@ int main(int argc, char **argv) {
         }
     }
 
+/***************************
+****** Line Visualization ******
+****************************/
+
     visualization_msgs::Marker marker_result[plane_size*8];
     for (int i = 0; i < plane_size; i++){
         for (int j = 0; j < horizontal_line_params[i].size(); j++){
-            point_plane.x = horizontal_line_params[i][j][0];
-            point_plane.y = horizontal_line_params[i][j][1];
-            point_plane.z = horizontal_line_params[i][j][2];
             SetMarker(marker_result[i*4+j], i*4+j, 4, 0.01, rand() % 255, rand() % 255, rand() % 255);
+            point_plane.x = corners[i][j].x();
+            point_plane.y = corners[i][j].y();
+            point_plane.z = corners[i][j].z();
             marker_result[i*4+j].points.push_back(point_plane);
-            double line_step = 0.5;
-            for (int k = 0 ; k < 5; k++){
-                point_plane.x = horizontal_line_params[i][j][0] + line_step * horizontal[i][0];
-                point_plane.y = horizontal_line_params[i][j][1] + line_step * horizontal[i][1];
-                point_plane.z = horizontal_line_params[i][j][2] + line_step * horizontal[i][2];
-                marker_result[i*4+j].points.push_back(point_plane);
-                point_plane.x = horizontal_line_params[i][j][0] - line_step * horizontal[i][0];
-                point_plane.y = horizontal_line_params[i][j][1] - line_step * horizontal[i][1];
-                point_plane.z = horizontal_line_params[i][j][2] - line_step * horizontal[i][2];
-                marker_result[i*4+j].points.push_back(point_plane);
-            }
+            point_plane.x = corners[i][j+12].x();
+            point_plane.y = corners[i][j+12].y();
+            point_plane.z = corners[i][j+12].z();
+            marker_result[i*4+j].points.push_back(point_plane);
         }
 
         for (int j = 0; j < vertical_line_params[i].size(); j++){
-            point_plane.x = vertical_line_params[i][j][0];
-            point_plane.y = vertical_line_params[i][j][1];
-            point_plane.z = vertical_line_params[i][j][2];
             SetMarker(marker_result[i*4+j+4*plane_size], i*4+j+4*plane_size, 4, 0.01, rand() % 255, rand() % 255, rand() % 255);
+            point_plane.x = corners[i][4*j].x();
+            point_plane.y = corners[i][4*j].y();
+            point_plane.z = corners[i][4*j].z();
             marker_result[i*4+j+4*plane_size].points.push_back(point_plane);
-            double line_step = 0.5;
-            for (int k = 0 ; k < 5; k++){
-                point_plane.x = vertical_line_params[i][j][0] + line_step * vertical[i][0];
-                point_plane.y = vertical_line_params[i][j][1] + line_step * vertical[i][1];
-                point_plane.z = vertical_line_params[i][j][2] + line_step * vertical[i][2];
-                marker_result[i*4+j+4*plane_size].points.push_back(point_plane);
-                point_plane.x = vertical_line_params[i][j][0] - line_step * vertical[i][0];
-                point_plane.y = vertical_line_params[i][j][1] - line_step * vertical[i][1];
-                point_plane.z = vertical_line_params[i][j][2] - line_step * vertical[i][2];
-                marker_result[i*4+j+4*plane_size].points.push_back(point_plane);
-            }
+            point_plane.x = corners[i][4*j+3].x();
+            point_plane.y = corners[i][4*j+3].y();
+            point_plane.z = corners[i][4*j+3].z();
+            marker_result[i*4+j+4*plane_size].points.push_back(point_plane);
         }
     }
-
-
-
 
 
 
@@ -816,7 +809,7 @@ int main(int argc, char **argv) {
             pub_result.publish(marker_result[i]);
         }
 
-        cout << "Publishing to rostopic!" << endl;
+        ROS_INFO( "Publishing to rostopic! Please check the rviz...");
 
         ros::spinOnce();
         rate.sleep();

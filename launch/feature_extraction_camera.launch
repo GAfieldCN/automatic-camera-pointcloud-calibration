@@ -3,7 +3,7 @@
   
     <param name="intrinsic_path"    value="$(find automatic-camera-pointcloud-calibration)/data/parameters/intrinsic.txt" />  <!-- intrinsic file -->
     <param name="input_photo_path"  value="$(find automatic-camera-pointcloud-calibration)/data/photo/3.jpg" />  <!-- photo to find the corner -->
-    <param name="output_path"        value="$(find automatic-camera-pointcloud-calibration)/data/corner_photo.txt" />  <!-- file to save the photo corner -->
+    <param name="output_path"        value="$(find automatic-camera-pointcloud-calibration)/data/feature/corner_photo.txt" />  <!-- file to save the photo corner -->
     <param name="binary_threshold"        value="80" />  <!-- Change it when the feature extraction works not well! -->
     <param name="min_area"        value="40" />  <!-- Depends on the pixel area of squares -->
     <param name="max_area"        value="100" />  <!-- Depends on the pixel area of squares -->
