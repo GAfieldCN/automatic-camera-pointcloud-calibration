@@ -5,11 +5,13 @@
     <param name="input_bag_path"        value="/home/gnc/3.bag" />
     <param name="temp_path"           value="$(find automatic-camera-pointcloud-calibration)/data/temp.txt" />  <!-- path to save new photo file -->
     <param name="output_path"           value="$(find automatic-camera-pointcloud-calibration)/data/feature/corner_pointcloud.txt" />  <!-- path to save new photo file -->
+    <param name="threshold_lidar"       type="int" value="1000000" />
 
-    <param name="threshold_lidar"       type="int" value="1000000" />  <!-- the maximum points shown on the photo -->
     <param name="square_length"       type="double" value="0.1" />
     <param name="board_length"       type="double" value="0.5" />
-
+    <param name="plane_size"       type="int" value="3" />
+    <param name="FOV_vertical"       type="int" value="35" />  <!-- One side only. If the lidar has +-35 deg FOV, enter 35. -->
+    <param name="FOV_horizontal"       type="int" value="35" />  <!-- One side only. If the lidar has +-35 deg FOV, enter 35. -->
 
  <node pkg="automatic-camera-pointcloud-calibration" name="feature_extraction_pointcloud" type="feature_extraction_pointcloud" output="screen"></node>
 

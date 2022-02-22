@@ -29,24 +29,13 @@ struct point_type{
     double reflectivity;
 };
 
-const int plane_size = 3, line_size = 12;
 point_type point;
 vector<point_type> points, temp_points, frontier_points, plane, filtered_points1, filtered_points2;
-vector<vector<point_type>> planes;
-geometry_msgs::Point point_cloud, frontier, point_plane, point_line, filter;
-
 vector<double> plane_param;
 vector< vector<double> > plane_params;
-vector<double> line_param;
-vector< vector <double> > horizontal_line_params[plane_size];
-vector< vector <double> > vertical_line_params[plane_size];
-
-vector<geometry_msgs::Point> point_clouds;
-visualization_msgs::Marker marker_pointcloud, marker_frontier, marker_filter, marker_plane[plane_size], marker_line[line_size*plane_size], marker_corners;
-vector<visualization_msgs::Marker> marker_planes;
 
 vector<livox_ros_driver::CustomMsg> lidar_datas;
-int threshold_lidar;  // number of cloud point on the photo
+int threshold_lidar;
 string input_bag_path, input_photo_path, output_path, intrinsic_path, extrinsic_path, temp_path;
 double square_length, board_length;
 
@@ -74,30 +63,6 @@ void SetMarker(visualization_msgs::Marker &point, int id, int type, float scale,
     point.color.b = b / 255.0;  //0
     point.color.a = 255.0/255.0;
 }
-
-//void SetLine(visualization_msgs::Marker &point, int id, float scale, float r, float g, float b)
-//{
-//    point.header.frame_id = "map";
-//    point.header.stamp = ros::Time::now();
-//    point.ns = "visualization";
-//    point.pose.orientation.w = 1.0;
-//
-//    point.id = id;
-//
-//    point.action = point.ADD;
-//
-//    point.type  = visualization_msgs::Marker::LINE_STRIP;
-//
-//    point.scale.x = scale; //node:0.08
-//    point.scale.y = scale;
-//
-//    point.lifetime = ros::Duration();
-//
-//    point.color.r = r / 255.0;  //255
-//    point.color.g = g / 255.0;  //69
-//    point.color.b = b / 255.0;  //0
-//    point.color.a = 255.0/255.0;
-//}
 
 void loadPointcloudFromROSBag(const string& bag_path) {
     ROS_INFO("Start to load the rosbag %s", bag_path.c_str());
@@ -273,7 +238,6 @@ vector<double> RANSAC_Line(vector<point_type> &one_plane, vector<double> param, 
 
     sort(index_out_line.begin(), index_out_line.end());
 
-
     for (int p = index_out_line.size() - 1 ; p > - 1; p --){
         one_plane.erase(one_plane.begin() + index_out_line[p]);
     }
@@ -297,15 +261,25 @@ int main(int argc, char **argv) {
     ros::Publisher pub_line = nh.advertise<visualization_msgs::Marker>("/lines", 1000);
     ros::Publisher pub_corner = nh.advertise<visualization_msgs::Marker>("/corners", 1000);
     ros::Publisher pub_result = nh.advertise<visualization_msgs::Marker>("/result", 1000);
-//    ros::Publisher pub_planes[plane_size];
-//    for (int i = 0; i < plane_size; i++){
-//        pub_planes[i] = nh.advertise<visualization_msgs::Marker>("/plane_" + std::to_string(i), 1000);
-//    }
+
+    const int plane_size = 3, line_size = 12;
+
+    vector<vector<point_type>> planes;
+    geometry_msgs::Point point_cloud, frontier, point_plane, point_line, filter;
+
+    vector<double> line_param;
+    vector< vector <double> > horizontal_line_params[plane_size];
+    vector< vector <double> > vertical_line_params[plane_size];
+
+    vector<geometry_msgs::Point> point_clouds;
+    visualization_msgs::Marker marker_pointcloud, marker_frontier, marker_filter, marker_plane[plane_size], marker_line[line_size*plane_size], marker_corners;
+    vector<visualization_msgs::Marker> marker_planes;
 
     SetMarker(marker_pointcloud, 0, 7, 0.01, 255, 200, 8);
     SetMarker(marker_frontier, 0, 7, 0.01, 255, 0, 0);
     SetMarker(marker_filter, 0, 7, 0.01, 0, 255, 0);
     SetMarker(marker_corners, 0, 7, 0.03, 255, 10, 10);
+
 
 //   loadPointcloudFromROSBag(input_bag_path);
 //    int myCount = 0;
@@ -458,8 +432,8 @@ int main(int argc, char **argv) {
 //        }
 //    }
 
-    //! Debug process
-    std::ifstream fin("/home/ljh/catkin_ws/src/automatic-camera-pointcloud-calibration/data/temp.txt", std::ios::in);
+    //! Debug process.
+    std::ifstream fin("/home/gnc/catkin_ws/src/automatic-camera-pointcloud-calibration/data/temp.txt", std::ios::in);
     char line[1024]={0};
     std::string xx = "";
     std::string yy = "";
@@ -528,7 +502,6 @@ int main(int argc, char **argv) {
 
     }
 
-
     /***************************
     ****** Line Detection ******
     ****************************/
@@ -589,7 +562,7 @@ int main(int argc, char **argv) {
         horizontal[i] << hor_x, hor_y, hor_z;
         plane_norm[i] << plane_params[i][0], plane_params[i][1],plane_params[i][2];
         plane_norm[i] = plane_norm[i].normalized();
-        cout << "Plane " << i+1 << " normal vector:\t" << plane_norm[i].transpose() << endl;
+        //cout << "Plane " << i+1 << " normal vector:\t" << plane_norm[i].transpose() << endl;
         horizontal[i] = (horizontal[i] - (horizontal[i].dot(plane_norm[i]) * plane_norm[i] / pow(plane_norm[i].norm(),2))).normalized();
         cout << "Plane " << i+1 << " horizontal vector:\t" << horizontal[i].transpose() << endl;
 
@@ -633,9 +606,6 @@ int main(int argc, char **argv) {
             if (parallel_min < 0.99) vertical_line_params[i].erase(vertical_line_params[i].begin() + ver_index);
 
         }
-
-        cout << "Plane " << i+1 << " horizontal line num = " << horizontal_line_params[i].size() << endl;
-        cout << "Plane " << i+1 << " vertical line num = " << vertical_line_params[i].size() << endl;
     }
 
     // To remove coincide lines and the two edges of the board
@@ -656,7 +626,6 @@ int main(int argc, char **argv) {
                     idx_rm_hor.push_back(j);
                     idx_rm_hor.push_back(k);
                 }
-                //cout << "ho " << i << " " << j << " " << k << " " << dis_p2l << endl;
             }
         }
 
@@ -688,9 +657,6 @@ int main(int argc, char **argv) {
         for (int p = idx_rm_ver.size() - 1 ; p > - 1; p --){
             vertical_line_params[i].erase(vertical_line_params[i].begin() + idx_rm_ver[p]);
         }
-
-        cout << "Plane " << i + 1 << " horizontal line num = " << horizontal_line_params[i].size() << endl;
-        cout << "Plane " << i + 1 << " vertical line num = " << vertical_line_params[i].size() << endl;
     }
 
     for (int i = 0; i < plane_size; i++){
@@ -700,7 +666,6 @@ int main(int argc, char **argv) {
 //            cout << "Plane " << i + 1 << " xyz = " << horizontal_line_params[i][j][2] << endl;
 //        }
     }
-
 
     // Situation that only one side of the board is detected
     vector<Eigen::Vector3d> horizontal_points[plane_size], vertical_points[plane_size];
@@ -733,9 +698,9 @@ int main(int argc, char **argv) {
         }
     }
 
-    /***************************
+    /******************************
     ****** Corner Extraction ******
-    ****************************/
+    *******************************/
 
     vector<Eigen::Vector3d> corners[plane_size];
     ofstream outfile(output_path.c_str());
@@ -757,9 +722,9 @@ int main(int argc, char **argv) {
         }
     }
 
-/***************************
+/*******************************
 ****** Line Visualization ******
-****************************/
+********************************/
 
     visualization_msgs::Marker marker_result[plane_size*8];
     for (int i = 0; i < plane_size; i++){
@@ -789,24 +754,25 @@ int main(int argc, char **argv) {
     }
 
 
-
-
+/*************************************
+****** Publishing to ROS & Rviz ******
+**************************************/
     while (ros::ok()){
         pub_marker.publish(marker_pointcloud);
         pub_frontier.publish(marker_frontier);
         pub_filter.publish(marker_filter);
         pub_corner.publish(marker_corners);
 
-        for (int i = 0; i < plane_size; i++){
-            pub_plane.publish(marker_plane[i]);
+        for (auto & i : marker_plane){
+            pub_plane.publish(i);
         }
 
-        for (int i = 0; i < plane_size*line_size; i++){
-            pub_line.publish(marker_line[i]);
+        for (auto & i : marker_line){
+            pub_line.publish(i);
         }
 
-        for (int i = 0; i < plane_size*8; i++){
-            pub_result.publish(marker_result[i]);
+        for (auto & i : marker_result){
+            pub_result.publish(i);
         }
 
         ROS_INFO( "Publishing to rostopic! Please check the rviz...");
