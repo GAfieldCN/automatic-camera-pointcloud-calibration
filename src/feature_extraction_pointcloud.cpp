@@ -281,192 +281,192 @@ int main(int argc, char **argv) {
     SetMarker(marker_corners, 0, 7, 0.03, 255, 10, 10);
 
 
-//   loadPointcloudFromROSBag(input_bag_path);
-//    int myCount = 0;
-//    for (size_t i = 0; i < lidar_datas.size(); ++i) {
-//        for (size_t j = 0; j < lidar_datas[i].point_num; ++j) {
-//            // visualization
-//            point_cloud.x = lidar_datas[i].points[j].x;
-//            point_cloud.y = lidar_datas[i].points[j].y;
-//            point_cloud.z = lidar_datas[i].points[j].z;
-//            point_clouds.push_back(point_cloud);
-//            marker_pointcloud.points.push_back(point_cloud);
-//
-//            // Data collection
-//            point.x = lidar_datas[i].points[j].x;
-//            point.y = lidar_datas[i].points[j].y;
-//            point.z = lidar_datas[i].points[j].z;
-//            point.reflectivity = lidar_datas[i].points[j].reflectivity;
-//            point.azimuth = rad2deg * atan(point.y / point.x);
-//            point.elevation = rad2deg * atan(point.z / sqrt(pow(point.x, 2) + pow(point.y, 2)));
-//            point.range = sqrt(pow(point.x, 2) + pow(point.y, 2) + pow(point.z, 2));
-//            points.push_back(point);
-//            //cout << "x = " << point.x << " y = " << point.y << " z = " << point.z << " ref = " << point.reflectivity << endl;
-//        }
-//        if (myCount > threshold_lidar) {
-//            break;
-//        }
-//    }
-//
-//    /***************************
-//     ** Detect frontier points **
-//     ****************************/
-//    double step = 0.2;
-//    for (double j = -35; j < 35; j += step){
-//        for (double k = -10; k < 5; k += step) {
-//            cout << "new line : " << "j = " << j << " k = " << k << endl;
-//            temp_points.clear();
-//            for (size_t i = 0; i < points.size(); i++){
-//                if ((abs(points[i].azimuth - j) <= 1.4*step) && (abs(points[i].elevation - k) <= 1.4*step)){
-//                    temp_points.push_back(points[i]);
-//                    for (int q = 0; q < temp_points.size(); q ++){
-//                        //cout << "distance = "  << temp_points[q].range << endl;
-//                    }
-//                }
-//            }
-//            if (temp_points.size() != 0 ) {
-//                double sum = 0, average = 0, accum = 0, stdv = 0, min = 50, max = 0, range = 0;
-//                int min_index = 0;
-//                for_each(temp_points.begin(), temp_points.end(), [&sum](point_type b) -> void {
-//                    sum += b.range;
-//                });
-//                average = sum / temp_points.size();
-//                for_each(temp_points.begin(), temp_points.end(), [&](point_type b) -> void {
-//                    accum += (b.range - average) * (b.range - average);
-//                });
-//
-//                stdv = sqrt(accum / (temp_points.size() - 1));
-//
-//
-//                for (int q = 0; q < temp_points.size(); q++) {
-//                    if (temp_points[q].range > max) { max = temp_points[q].range; }
-//                    if (temp_points[q].range < min) { min = temp_points[q].range; min_index = q;}
-//                }
-//                range = max - min;
-//
-//
-//                if (range > 0.3){
-//                    cout << "size = " << temp_points.size() << endl;
-//                    cout << "std = " << stdv << endl;
-//                    cout << "max = " << max << endl;
-//                    cout << "min = " << min << endl;
-//                    cout << "range = " << range << endl;
-//                    frontier.x = temp_points[min_index].x;
-//                    frontier.y = temp_points[min_index].y;
-//                    frontier.z = temp_points[min_index].z;
-//                    frontier_points.push_back(temp_points[min_index]);
-//                    marker_frontier.points.push_back(frontier);
-//                }
-//            }
-//        }
-//    }
-//    cout << "frontier points number = " << frontier_points.size() << endl;
-//
-//    step = 5;
-//
-//    for (double j = -35; j < 35; j += step) {
-//        for (double k = -10; k < 5; k += step) {
-//            cout << "new line : " << "j = " << j << " k = " << k << endl;
-//            temp_points.clear();
-//            for (size_t i = 0; i < frontier_points.size(); i++) {
-//                if ((abs(frontier_points[i].azimuth - j) <= 1.2 * step) &&
-//                    (abs(frontier_points[i].elevation - k) <= 1.2 * step)) {
-//                    temp_points.push_back(frontier_points[i]);
-//                }
-//            }
-//            if (temp_points.size() != 0) {
-//                double sum = 0, average = 0, accum = 0, stdv = 0, min = 50, max = 0, range = 0;
-//                int min_index = 0;
-//                for_each(temp_points.begin(), temp_points.end(), [&sum](point_type b) -> void {
-//                    sum += b.range;
-//                });
-//                average = sum / temp_points.size();
-//                for_each(temp_points.begin(), temp_points.end(), [&](point_type b) -> void {
-//                    accum += (b.range - average) * (b.range - average);
-//                });
-//
-//                stdv = sqrt(accum / (temp_points.size() - 1));
-//
-//                for (int q = 0; q < temp_points.size(); q++) {
-//                    if (temp_points[q].range < average - 0.02) {
-//                        filtered_points1.push_back(temp_points[q]);
-////                        filter.x = temp_points[q].x;
-////                        filter.y = temp_points[q].y;
-////                        filter.z = temp_points[q].z;
-////                        marker_filter.points.push_back(filter);
-//                    }
-//                }
-//            }
-//        }
-//    }
-//    cout << "filtered points number1 = " << filtered_points1.size() << endl;
-//    ofstream outfile(temp_path.c_str());
-//    if (!outfile) {
-//        cout << "Can not open the output file" << endl;
-//        exit(0);
-//    }
-//
-//        for (auto i = 0; i < filtered_points1.size(); i++){
-//        temp_points.clear();
-//        double dist = 0, dist_sum = 0;
-//        for (auto j = 0; j < filtered_points1.size(); j++){
-//            dist = sqrt(pow(filtered_points1[i].x - filtered_points1[j].x, 2) +
-//                    pow(filtered_points1[i].y - filtered_points1[j].y, 2) +
-//                    pow(filtered_points1[i].z - filtered_points1[j].z, 2));
-//
-//            if (dist < 0.05 ) {
-//                dist_sum += dist;
-//                temp_points.push_back(filtered_points1[j]);
-//            }
-//        }
-//
-//        if (dist_sum / temp_points.size() > 0.02){
-//            outfile << filtered_points1[i].x << " " << filtered_points1[i].y << " " << filtered_points1[i].z << " " <<
-//            filtered_points1[i].range << " " << filtered_points1[i].elevation << " " << filtered_points1[i].azimuth << endl;
-//            //cout << "dist = "<< dist_sum / temp_points.size() << endl;
-//            filtered_points2.push_back(filtered_points1[i]);
-//            filter.x = filtered_points1[i].x;
-//            filter.y = filtered_points1[i].y;
-//            filter.z = filtered_points1[i].z;
-//            marker_filter.points.push_back(filter);
-//        }
-//    }
+   loadPointcloudFromROSBag(input_bag_path);
+    int myCount = 0;
+    for (size_t i = 0; i < lidar_datas.size(); ++i) {
+        for (size_t j = 0; j < lidar_datas[i].point_num; ++j) {
+            // visualization
+            point_cloud.x = lidar_datas[i].points[j].x;
+            point_cloud.y = lidar_datas[i].points[j].y;
+            point_cloud.z = lidar_datas[i].points[j].z;
+            point_clouds.push_back(point_cloud);
+            marker_pointcloud.points.push_back(point_cloud);
 
-    //! Debug process.
-    std::ifstream fin("/home/gnc/catkin_ws/src/automatic-camera-pointcloud-calibration/data/temp.txt", std::ios::in);
-    char line[1024]={0};
-    std::string xx = "";
-    std::string yy = "";
-    std::string zz = "";
-    std::string range = "";
-    std::string elevation = "";
-    std::string azimuth = "";
-    while(fin.getline(line, sizeof(line)))
-    {
-        std::stringstream word(line);
-        word >> xx;
-        word >> yy;
-        word >> zz;
-        word >> range;
-        word >> elevation;
-        word >> azimuth;
-
-        point.x = atof(xx.c_str());
-        point.y = atof(yy.c_str());
-        point.z = atof(zz.c_str());
-        filter.x = point.x;
-        filter.y = point.y;
-        filter.z = point.z;
-        marker_filter.points.push_back(filter);
-        point.range = atof(range.c_str());
-        point.elevation = atof(elevation.c_str());
-        point.azimuth = atof(azimuth.c_str());
-        filtered_points2.push_back(point);
+            // Data collection
+            point.x = lidar_datas[i].points[j].x;
+            point.y = lidar_datas[i].points[j].y;
+            point.z = lidar_datas[i].points[j].z;
+            point.reflectivity = lidar_datas[i].points[j].reflectivity;
+            point.azimuth = rad2deg * atan(point.y / point.x);
+            point.elevation = rad2deg * atan(point.z / sqrt(pow(point.x, 2) + pow(point.y, 2)));
+            point.range = sqrt(pow(point.x, 2) + pow(point.y, 2) + pow(point.z, 2));
+            points.push_back(point);
+            //cout << "x = " << point.x << " y = " << point.y << " z = " << point.z << " ref = " << point.reflectivity << endl;
+        }
+        if (myCount > threshold_lidar) {
+            break;
+        }
     }
-    fin.clear();
-    fin.close();
 
-    cout << "filtered points size = " << filtered_points2.size() << endl;
+    /***************************
+     ** Detect frontier points **
+     ****************************/
+    double step = 0.2;
+    for (double j = -35; j < 35; j += step){
+        for (double k = -10; k < 5; k += step) {
+            cout << "new line : " << "j = " << j << " k = " << k << endl;
+            temp_points.clear();
+            for (size_t i = 0; i < points.size(); i++){
+                if ((abs(points[i].azimuth - j) <= 1.4*step) && (abs(points[i].elevation - k) <= 1.4*step)){
+                    temp_points.push_back(points[i]);
+                    for (int q = 0; q < temp_points.size(); q ++){
+                        //cout << "distance = "  << temp_points[q].range << endl;
+                    }
+                }
+            }
+            if (temp_points.size() != 0 ) {
+                double sum = 0, average = 0, accum = 0, stdv = 0, min = 50, max = 0, range = 0;
+                int min_index = 0;
+                for_each(temp_points.begin(), temp_points.end(), [&sum](point_type b) -> void {
+                    sum += b.range;
+                });
+                average = sum / temp_points.size();
+                for_each(temp_points.begin(), temp_points.end(), [&](point_type b) -> void {
+                    accum += (b.range - average) * (b.range - average);
+                });
+
+                stdv = sqrt(accum / (temp_points.size() - 1));
+
+
+                for (int q = 0; q < temp_points.size(); q++) {
+                    if (temp_points[q].range > max) { max = temp_points[q].range; }
+                    if (temp_points[q].range < min) { min = temp_points[q].range; min_index = q;}
+                }
+                range = max - min;
+
+
+                if (range > 0.3){
+                    cout << "size = " << temp_points.size() << endl;
+                    cout << "std = " << stdv << endl;
+                    cout << "max = " << max << endl;
+                    cout << "min = " << min << endl;
+                    cout << "range = " << range << endl;
+                    frontier.x = temp_points[min_index].x;
+                    frontier.y = temp_points[min_index].y;
+                    frontier.z = temp_points[min_index].z;
+                    frontier_points.push_back(temp_points[min_index]);
+                    marker_frontier.points.push_back(frontier);
+                }
+            }
+        }
+    }
+    cout << "frontier points number = " << frontier_points.size() << endl;
+
+    step = 5;
+
+    for (double j = -35; j < 35; j += step) {
+        for (double k = -10; k < 5; k += step) {
+            cout << "new line : " << "j = " << j << " k = " << k << endl;
+            temp_points.clear();
+            for (size_t i = 0; i < frontier_points.size(); i++) {
+                if ((abs(frontier_points[i].azimuth - j) <= 1.2 * step) &&
+                    (abs(frontier_points[i].elevation - k) <= 1.2 * step)) {
+                    temp_points.push_back(frontier_points[i]);
+                }
+            }
+            if (temp_points.size() != 0) {
+                double sum = 0, average = 0, accum = 0, stdv = 0, min = 50, max = 0, range = 0;
+                int min_index = 0;
+                for_each(temp_points.begin(), temp_points.end(), [&sum](point_type b) -> void {
+                    sum += b.range;
+                });
+                average = sum / temp_points.size();
+                for_each(temp_points.begin(), temp_points.end(), [&](point_type b) -> void {
+                    accum += (b.range - average) * (b.range - average);
+                });
+
+                stdv = sqrt(accum / (temp_points.size() - 1));
+
+                for (int q = 0; q < temp_points.size(); q++) {
+                    if (temp_points[q].range < average - 0.02) {
+                        filtered_points1.push_back(temp_points[q]);
+//                        filter.x = temp_points[q].x;
+//                        filter.y = temp_points[q].y;
+//                        filter.z = temp_points[q].z;
+//                        marker_filter.points.push_back(filter);
+                    }
+                }
+            }
+        }
+    }
+    cout << "filtered points number1 = " << filtered_points1.size() << endl;
+    ofstream outfile(temp_path.c_str());
+    if (!outfile) {
+        cout << "Can not open the output file" << endl;
+        exit(0);
+    }
+
+        for (auto i = 0; i < filtered_points1.size(); i++){
+        temp_points.clear();
+        double dist = 0, dist_sum = 0;
+        for (auto j = 0; j < filtered_points1.size(); j++){
+            dist = sqrt(pow(filtered_points1[i].x - filtered_points1[j].x, 2) +
+                    pow(filtered_points1[i].y - filtered_points1[j].y, 2) +
+                    pow(filtered_points1[i].z - filtered_points1[j].z, 2));
+
+            if (dist < 0.05 ) {
+                dist_sum += dist;
+                temp_points.push_back(filtered_points1[j]);
+            }
+        }
+
+        if (dist_sum / temp_points.size() > 0.02){
+            outfile << filtered_points1[i].x << " " << filtered_points1[i].y << " " << filtered_points1[i].z << " " <<
+            filtered_points1[i].range << " " << filtered_points1[i].elevation << " " << filtered_points1[i].azimuth << endl;
+            //cout << "dist = "<< dist_sum / temp_points.size() << endl;
+            filtered_points2.push_back(filtered_points1[i]);
+            filter.x = filtered_points1[i].x;
+            filter.y = filtered_points1[i].y;
+            filter.z = filtered_points1[i].z;
+            marker_filter.points.push_back(filter);
+        }
+    }
+
+//    //! Debug process.
+//    std::ifstream fin("/home/gnc/catkin_ws/src/automatic-camera-pointcloud-calibration/data/temp.txt", std::ios::in);
+//    char line[1024]={0};
+//    std::string xx = "";
+//    std::string yy = "";
+//    std::string zz = "";
+//    std::string range = "";
+//    std::string elevation = "";
+//    std::string azimuth = "";
+//    while(fin.getline(line, sizeof(line)))
+//    {
+//        std::stringstream word(line);
+//        word >> xx;
+//        word >> yy;
+//        word >> zz;
+//        word >> range;
+//        word >> elevation;
+//        word >> azimuth;
+//
+//        point.x = atof(xx.c_str());
+//        point.y = atof(yy.c_str());
+//        point.z = atof(zz.c_str());
+//        filter.x = point.x;
+//        filter.y = point.y;
+//        filter.z = point.z;
+//        marker_filter.points.push_back(filter);
+//        point.range = atof(range.c_str());
+//        point.elevation = atof(elevation.c_str());
+//        point.azimuth = atof(azimuth.c_str());
+//        filtered_points2.push_back(point);
+//    }
+//    fin.clear();
+//    fin.close();
+//
+//    cout << "filtered points size = " << filtered_points2.size() << endl;
 
     /***************************
      ** Detect plane using RANSAC **
@@ -703,8 +703,8 @@ int main(int argc, char **argv) {
     *******************************/
 
     vector<Eigen::Vector3d> corners[plane_size];
-    ofstream outfile(output_path.c_str());
-    if (!outfile) {
+    ofstream out_file(output_path.c_str());
+    if (!out_file) {
         cout << "Can not open the output file" << endl;
         exit(0);
     }
@@ -714,7 +714,7 @@ int main(int argc, char **argv) {
             for (int k = 0; k < horizontal_points[i].size(); k++){
                 Eigen::Vector3d temp = vertical_points[i][j] + (horizontal_points[i][k]-vertical_points[i][j]).cross(horizontal[i]).dot(vertical[i].cross(horizontal[i]))
                         / vertical[i].cross(horizontal[i]).dot(vertical[i].cross(horizontal[i])) * vertical[i];
-                outfile << temp.x() << "   " << temp.y() << "   " << temp.z() << endl;
+                out_file << temp.x() << "   " << temp.y() << "   " << temp.z() << endl;
                 corners[i].push_back(temp);
                 point_plane.x = temp[0];point_plane.y = temp[1];point_plane.z = temp[2];
                 marker_corners.points.push_back(point_plane);
