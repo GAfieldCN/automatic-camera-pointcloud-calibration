@@ -164,6 +164,8 @@ int main(int argc, char **argv)
     vector <vector<size_t> > sorted_corners(RectContours.size());
     vector <Point2f> final_corners;
     vector <vector<Point2f> > results;
+    vector <vector<Point2f> > planes[plane_size];
+    vector<Point2f> result[plane_size];
 
 
     /***************************
@@ -396,9 +398,23 @@ int main(int argc, char **argv)
         sorted_index = sort_indexes<vector<size_t>>(sorted_corners);
     }
 
-    for (i = 0; i < results.size(); i++){
-        cout << "Square " << i+1 << " corners: \n" << results[sorted_index[i]] << endl;
+    if (plane_size*4 != results.size()) ROS_WARN("Contour size does not match plane size!");
+
+    // List the corners by u v axis
+    for (i = 0; i < plane_size; i++){
+        planes[i].push_back(results[sorted_index[4*i]]);planes[i].push_back(results[sorted_index[4*i+1]]);
+        planes[i].push_back(results[sorted_index[4*i+2]]);planes[i].push_back(results[sorted_index[4*i+3]]);
+        result[i].push_back(planes[i][0][0]);result[i].push_back(planes[i][0][1]);
+        result[i].push_back(planes[i][1][0]);result[i].push_back(planes[i][1][1]);
+        result[i].push_back(planes[i][0][3]);result[i].push_back(planes[i][0][2]);
+        result[i].push_back(planes[i][1][3]);result[i].push_back(planes[i][1][2]);
+        result[i].push_back(planes[i][2][0]);result[i].push_back(planes[i][2][1]);
+        result[i].push_back(planes[i][3][0]);result[i].push_back(planes[i][3][1]);
+        result[i].push_back(planes[i][2][3]);result[i].push_back(planes[i][2][2]);
+        result[i].push_back(planes[i][3][3]);result[i].push_back(planes[i][3][2]);
+
     }
+
 
     // Write data
     ofstream outfile(output_name.c_str());
@@ -417,16 +433,16 @@ int main(int argc, char **argv)
     cv::namedWindow("output");
     cv::cvtColor(result_img, gray_img, cv::COLOR_BGR2GRAY);
 
-    for (size_t t = 0; t < results.size(); ++t) {
-        cv::cornerSubPix(gray_img, results[sorted_index[t]], winSize, zerozone, criteria);
-        cout << "Square " << t + 1 << " precise sorted corner points: " << endl;
-        for (size_t q = 0; q < results[sorted_index[t]].size(); ++q){
-            cv::circle(result_img, results[sorted_index[t]][q], 3,
+    for (i = 0; i < plane_size; i++) {
+        cv::cornerSubPix(gray_img, result[i], winSize, zerozone, criteria);
+        cout << "Plane" << i + 1 << " precise sorted corner points: " << endl;
+        for (size_t q = 0; q < result[i].size(); ++q){
+            cv::circle(result_img, result[i][q], 3,
                        cv::Scalar(random_number_generator.uniform(0, 255), random_number_generator.uniform(0, 255),
                                   random_number_generator.uniform(0, 255)), 1, 8, 0);
-            printf("(%.3f %.3f)", results[sorted_index[t]][q].x, results[sorted_index[t]][q].y);
+            printf("(%.3f %.3f)", result[i][q].x, result[i][q].y);
             cout << " " << endl;
-            outfile << float2str(results[sorted_index[t]][q].x) << "    " << float2str(results[sorted_index[t]][q].y) << endl;
+            outfile << float2str(result[i][q].x) << "    " << float2str(result[i][q].y) << endl;
         }
     }
 
