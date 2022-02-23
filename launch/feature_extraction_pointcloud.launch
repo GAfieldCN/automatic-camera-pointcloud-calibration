@@ -10,8 +10,10 @@
     <param name="square_length"       type="double" value="0.1" />
     <param name="board_length"       type="double" value="0.5" />
     <param name="plane_size"       type="int" value="3" />
-    <param name="FOV_vertical"       type="int" value="35" />  <!-- One side only. If the lidar has +-35 deg FOV, enter 35. -->
+    <param name="line_size"       type="int" value="12" />     <!-- If some expected lines are not detected, increase this value. -->
     <param name="FOV_horizontal"       type="int" value="35" />  <!-- One side only. If the lidar has +-35 deg FOV, enter 35. -->
+    <param name="FOV_vertical"       type="int" value="10" />  <!-- To speed the process, this value can be decreased as long as the target lies in this range. -->
+
 
  <node pkg="automatic-camera-pointcloud-calibration" name="feature_extraction_pointcloud" type="feature_extraction_pointcloud" output="screen"></node>
 

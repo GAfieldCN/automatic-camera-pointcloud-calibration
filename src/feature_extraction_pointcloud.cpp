@@ -38,6 +38,7 @@ vector<livox_ros_driver::CustomMsg> lidar_datas;
 int threshold_lidar, FOV_vertical, FOV_horizontal;
 string input_bag_path, input_photo_path, output_path, intrinsic_path, extrinsic_path, temp_path;
 double square_length, board_length;
+int plane_size, line_size;
 
 void SetMarker(visualization_msgs::Marker &point, int id, int type, float scale, float r, float g, float b)
 {
@@ -121,6 +122,14 @@ void getParameters() {
     }
     if (!ros::param::get("FOV_horizontal", FOV_horizontal)) {
         cout << "Can not get the value of FOV_horizontal" << endl;
+        exit(1);
+    }
+    if (!ros::param::get("plane_size", plane_size)) {
+        cout << "Can not get the value of plane_size" << endl;
+        exit(1);
+    }
+    if (!ros::param::get("line_size", line_size)) {
+        cout << "Can not get the value of line_size" << endl;
         exit(1);
     }
     cout << "Loading parameters done!" << endl;
@@ -271,8 +280,6 @@ int main(int argc, char **argv) {
     ros::Publisher pub_corner = nh.advertise<visualization_msgs::Marker>("/corners", 1000);
     ros::Publisher pub_result = nh.advertise<visualization_msgs::Marker>("/result", 1000);
 
-    const int plane_size = 3, line_size = 12;
-
     vector<vector<point_type>> planes;
     geometry_msgs::Point point_cloud, frontier, point_plane, point_line, filter;
 
@@ -330,13 +337,15 @@ int main(int argc, char **argv) {
             count = 10.0 + count;
         }
 
-        for (double k = -10; k < 5; k += step) {
+        for (double k = - FOV_vertical; k < FOV_vertical; k += step) {
             //cout << "new line : " << "j = " << j << " k = " << k << endl;
             temp_points.clear();
             for (size_t i = 0; i < points.size(); i++){
-                if ((abs(points[i].azimuth - j) <= 1.4*step) && (abs(points[i].elevation - k) <= 1.4*step)){
-                    temp_points.push_back(points[i]);
-                    for (int q = 0; q < temp_points.size(); q ++){
+                if (points[i].range > 1){
+                    if ((abs(points[i].azimuth - j) <= 1.4*step) && (abs(points[i].elevation - k) <= 1.4*step)){
+                        temp_points.push_back(points[i]);
+                        for (int q = 0; q < temp_points.size(); q ++){
+                        }
                     }
                 }
             }
@@ -381,7 +390,7 @@ int main(int argc, char **argv) {
     step = 5;
     cout << "Starting to filter points..."<< endl;
     for (double j = -FOV_horizontal; j < FOV_horizontal; j += step) {
-        for (double k = -10; k < 5; k += step) {
+        for (double k = -FOV_vertical; k < FOV_vertical; k += step) {
             temp_points.clear();
             for (size_t i = 0; i < frontier_points.size(); i++) {
                 if ((abs(frontier_points[i].azimuth - j) <= 1.2 * step) &&
@@ -596,9 +605,9 @@ int main(int argc, char **argv) {
 
     Eigen::Vector3d line_direction;
     for (int i = 0; i < plane_size; i++){
-        if (vertical_line_params[i].size() > 7 || horizontal_line_params[i].size() > 7){
-            ROS_ERROR("Corner extraction failed! Please try again...");
-            exit(1);
+        if (vertical_line_params[i].size() > 8 || horizontal_line_params[i].size() > 8){
+            ROS_WARN("Line extraction may fail! Too many lines are detected!");
+            ROS_WARN("Please try again or decrease the line size!");
         }
 
         double parallel_min = 1; int ho_index, ver_index;
@@ -658,8 +667,8 @@ int main(int argc, char **argv) {
                                           vertical_line_params[i][t][0], vertical_line_params[i][t][1],
                                           vertical_line_params[i][t][2],
                                           vertical[i][0], vertical[i][1], vertical[i][2]);
-                if (dis_p2l < square_length/3) {
-                    idx_rm_ver.push_back(vertical_line_params[i][t][6] < vertical_line_params[i][k][6] ? t : k);
+                if (dis_p2l < square_length / 3) {
+                    idx_rm_ver.push_back(abs(vertical_line_params[i][t][6]) < abs(vertical_line_params[i][k][6]) ? t : k);
                 }
                 if (dis_p2l > board_length*0.9) {
                     idx_rm_ver.push_back(t);
@@ -697,8 +706,7 @@ int main(int argc, char **argv) {
         }
 
         if (vertical_line_params[i].size() != 4 || horizontal_line_params[i].size() != 4 ){
-            ROS_ERROR("Line extraction failed! Please try again...");
-            exit(1);
+            ROS_WARN("Corner extraction may fail! Detected not 8 lines! Please try again");
         }
 
         for (int j = 0; j < horizontal_line_params[i].size(); j++){
@@ -770,6 +778,7 @@ int main(int argc, char **argv) {
         }
     }
     cout << "Corner extraction succeeded!" << endl;
+    ROS_INFO("Result saved in %s", output_path.c_str());
 
 /*************************************
 ****** Publishing to ROS & Rviz ******

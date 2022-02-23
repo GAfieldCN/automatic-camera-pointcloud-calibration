@@ -9,6 +9,7 @@
     <param name="max_area"        value="100" />  <!-- Depends on the pixel area of squares -->
     <param name="rectangularity_preset"        value="0.95" />  <!-- minimal it when your squares are abnormal -->
     <param name="circularity_preset"        value="0.9" />  <!-- It decides whether your features are like circles -->
+    <param name="plane_size"        value="3" />  <!-- It decides whether your features are like circles -->
 
 
     <node pkg="automatic-camera-pointcloud-calibration" name="feature_extraction_camera" type="feature_extraction_camera" output="screen"></node>

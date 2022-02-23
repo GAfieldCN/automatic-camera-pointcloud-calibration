@@ -22,6 +22,7 @@ RNG random_number_generator;
 RNG rng(12345);
 cv::Mat gray_img, src_img;
 float binary_threshold, min_area, max_area, rectangularity_preset, circularity_preset;
+int plane_size;
 
 template <typename T>
 std::vector<size_t> sort_indexes(const std::vector<T> &v) {
@@ -64,6 +65,10 @@ void getParameters() {
     }
     if (!ros::param::get("circularity_preset", circularity_preset)) {
         cout << "Can not get the value of circularity_preset" << endl;
+        exit(1);
+    }
+    if (!ros::param::get("plane_size", plane_size)) {
+        cout << "Can not get the value of plane_size" << endl;
         exit(1);
     }
 }
@@ -161,7 +166,9 @@ int main(int argc, char **argv)
     vector <vector<Point2f> > results;
 
 
-    //! Main Loop: get corner points
+    /***************************
+     ** Main Loop: Detect corners **
+     ****************************/
     for (size_t j = 0; j < RectContours.size(); j++)
     {
         // Find the first corner
