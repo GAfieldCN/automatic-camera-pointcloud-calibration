@@ -1,8 +1,9 @@
-## Camera-LiDAR-Calibration Manual
+## Automatic-Camera-Pointcloud-Calibration Manual
 
-This solution provides a method for manually calibrating the extrinsic parameters between Livox LiDAR  and camera.
+This solution provides a method for automatically calibrating the extrinsic parameters between 
+pointcloud sensors (especially Livox LiDAR) and camera.
 
-### Step1: Environment configuration
+### 1: Environment configuration
 
 (The following calibration process is under the Ubuntu 64-bit 18.04 and ROS melodic environment )
 
