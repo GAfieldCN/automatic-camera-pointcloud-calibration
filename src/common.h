@@ -316,7 +316,6 @@ double dis_P2L_3d(double x, double y, double z, double x0, double y0, double z0,
     return distance;
 }
 
-//对角点进行排序，因为之前检测出的轮廓是带序号的
 size_t list_connor(size_t i1, size_t i2, size_t i3)
 {//排序
     size_t flag = 0;
@@ -339,7 +338,7 @@ size_t list_connor(size_t i1, size_t i2, size_t i3)
 
 
 float getDistance(CvPoint pointO, CvPoint pointA)
-{//求两点之间距离
+{
     float distance;
     distance = powf((pointO.x - pointA.x), 2) + powf((pointO.y - pointA.y), 2);
     distance = sqrtf(distance);
@@ -348,7 +347,7 @@ float getDistance(CvPoint pointO, CvPoint pointA)
 }
 
 float getAngle(CvPoint pointM, CvPoint pointL, CvPoint pointR)
-{//求三点之间的夹角
+{
     CvPoint L, R;
     float dist_L, dist_R, Theta;
     L.x = pointL.x - pointM.x;

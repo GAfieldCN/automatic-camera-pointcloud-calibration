@@ -53,37 +53,17 @@ include_directories(
   ${OpenCV_INCLUDE_DIRS}
 )
 
-add_executable(pcdTransfer src/pcdTransfer.cpp src/common.h)
-target_link_libraries(pcdTransfer ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-
-add_executable(cornerPhoto src/corner_photo.cpp src/common.h)
-target_link_libraries(cornerPhoto ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
-
-
-add_executable(getExt1 src/cam_lid_external1.cpp src/common.h)
-target_link_libraries(getExt1 ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${CERES_LIBRARIES})
+add_executable(GetExtrinsic src/get_extrinsic.cpp src/common.h)
+target_link_libraries(GetExtrinsic ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${CERES_LIBRARIES})
 
 add_executable(getExt2 src/cam_lid_external2.cpp src/common.h)
 target_link_libraries(getExt2 ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${CERES_LIBRARIES})
 
-
 add_executable(projectCloud src/projectCloud.cpp src/common.h)
 target_link_libraries(projectCloud ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 
-add_executable(projectradar src/projectradar.cpp src/common.h)
-target_link_libraries(projectradar ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
-
 add_executable(colorLidar src/color_lidar_display.cpp src/common.h)
 target_link_libraries(colorLidar ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${CERES_LIBRARIES})
-
-add_executable(cornerpoint src/cornerpoint.cpp src/common.h)
-target_link_libraries(cornerpoint ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${CERES_LIBRARIES})
-
-add_executable(data src/data.cpp)
-target_link_libraries(data ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${CERES_LIBRARIES})
-
-add_executable(lidar_record src/click_record.cpp)
-target_link_libraries(lidar_record ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${CERES_LIBRARIES})
 
 add_executable(feature_extraction_camera src/feature_extraction_camera.cpp src/common.h)
 target_link_libraries(feature_extraction_camera ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${CERES_LIBRARIES})

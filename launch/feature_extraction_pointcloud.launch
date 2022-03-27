@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
 
-   <!--  <param name="input_bag_path"        value="$(find automatic-camera-pointcloud-calibration)/data/lidar/3.bag" />   rosbag file -->
-    <param name="input_bag_path"        value="/home/gnc/3.bag" />
-    <param name="temp_path"           value="$(find automatic-camera-pointcloud-calibration)/data/temp.txt" />  <!-- path to save new photo file -->
-    <param name="output_path"           value="$(find automatic-camera-pointcloud-calibration)/data/feature/corner_pointcloud.txt" />  <!-- path to save new photo file -->
+   <!--  <param name="input_bag_path"        value="$(find automatic-camera-pointcloud-calibration)/data/lidar/yourbag.bag" />   rosbag file -->
+    <param name="input_bag_path"        value="/home/ljh/3.bag" />
+    <param name="temp_path"           value="$(find automatic-camera-pointcloud-calibration)/data/temp.txt" />  <!-- path to save filtered points -->
+    <param name="output_path"           value="$(find automatic-camera-pointcloud-calibration)/data/feature/corner_pointcloud.txt" />  <!-- path to save the results -->
     <param name="threshold_lidar"       type="int" value="1000000" />
 
     <param name="square_length"       type="double" value="0.1" />
@@ -12,10 +12,12 @@
     <param name="plane_size"       type="int" value="3" />
     <param name="line_size"       type="int" value="12" />     <!-- If some expected lines are not detected, increase this value. -->
     <param name="FOV_horizontal"       type="int" value="35" />  <!-- One side only. If the lidar has +-35 deg FOV, enter 35. -->
-    <param name="FOV_vertical"       type="int" value="10" />  <!-- To speed the process, this value can be decreased as long as the target lies in this range. -->
+    <param name="FOV_vertical"       type="int" value="10" />  <!-- To speed the process, this value can be decreased as long as the target is within this range. -->
 
 
  <node pkg="automatic-camera-pointcloud-calibration" name="feature_extraction_pointcloud" type="feature_extraction_pointcloud" output="screen"></node>
+
+ <node pkg="rviz" type="rviz" name="rviz" args="-d $(find automatic-camera-pointcloud-calibration)/launch/calibration_pointcloud.rviz"></node>
 
 </launch>
 
