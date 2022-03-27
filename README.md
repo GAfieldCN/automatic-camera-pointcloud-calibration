@@ -1,15 +1,15 @@
 ## Automatic-Camera-Pointcloud-Calibration Manual
 
-This solution provides a method for automatically calibrating the extrinsic parameters between 
+This package provides a method for automatically calibrating the extrinsic parameters between 
 pointcloud sensors (especially Livox LiDAR) and camera.
 
-### 1: Environment configuration
+### 1 Environment configuration
 
 (The following calibration process is under the Ubuntu 64-bit 18.04 and ROS melodic environment )
 
 #### 1.1 Install Livox SDK and driver
 
-Install [Livox SDK](https://github.com/Livox-SDK/Livox-SDK) and [livox_ros_driver](https://github.com/Livox-SDK/Livox-SDK-ROS). For convenience, the source code has been put in the **dependencies** folder. Please follow the instructions of the readme there. 
+Install [Livox SDK](https://github.com/Livox-SDK/Livox-SDK) and [livox_ros_driver](https://github.com/Livox-SDK/Livox-SDK-ROS). 
 You can skip this step if they are already installed. 
 
 ```
@@ -41,12 +41,13 @@ You can skip this step if they are already installed.
 #### 1.3 Compile  source code of calibration
 
 ```
-# install camera/lidar calibration package
+# install calibration package
 mkdir catkin_ws
 cd catkin_ws
 mkdir src
 cd src
 #TODO copy the folder livox_camera_lidar_calibration under the src
+#OR git clone https://github.com/GAfieldCN/automatic-camera-pointcloud-calibration.git
 cd ..
 catkin_make
 source devel/setup.bash
@@ -56,25 +57,30 @@ source devel/setup.bash
 
 This project includes the following nodes:
 
-- cornerPhoto - obtain the corner of the photo
+- feature_extraction_camera - obtain the corner of the photo
 
-- getExt1 - node1 to calculate the extrinsic parameters(optimize only the extrinsic) 
+- feature_extraction_pointcloud - obtain the corner of the LiDAR
+
+- GetExtrinsic - optimization to get the extrinsic parameters
 
 - projectCloud - project the LiDAR point cloud on the photo
 
-- colorLidar - give color to the LiDAR point cloud
+- colorLidar - LiDAR point cloud colorized visualization
 
 You can find the corresponding launch file in the launch folder if you want to modify any launch file.
 
-### Step2: Calibration of camera intrinsic parameters
+### 2 Calibration of camera intrinsic parameters
 
-Using MATLAB, OpenCV or Kalibr to get intrinsic parameters. 
+Using MATLAB, OpenCV or Kalibr etc. to get intrinsic parameters. 
 
-### Step3: Preparations and data collections
+### 3 Preparations and data collections
 
 #### 3.1 Calibration scene preparation
 
-It will be better to select a relatively empty environment for the calibration scene, to facilitate the identification of the calibration board and to ensure that the LiDAR has a certain distance from the calibration board. We need to select at least 12 different points, and it is better to collect datas from different positions and different angles.
+It will be better to select a relatively empty environment for the calibration scene
+to facilitate the identification of the calibration board, and to ensure that the LiDAR has a certain distance
+from the calibration board, probably 3-5m are best. Each board could provide 16 points, but it is recommended
+to use 2-3 boards, and it is better to arrange them with different positions and different angles.
 
 - **During the 3.2 and 3.3, make sure the scene is unchanged and the platform remains still**
 
