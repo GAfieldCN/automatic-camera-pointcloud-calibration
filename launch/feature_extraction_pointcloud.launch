@@ -17,7 +17,7 @@
 
  <node pkg="automatic-camera-pointcloud-calibration" name="feature_extraction_pointcloud" type="feature_extraction_pointcloud" output="screen"></node>
 
- <node pkg="rviz" type="rviz" name="rviz" args="-d $(find automatic-camera-pointcloud-calibration)/launch/calibration_pointcloud.rviz"></node>
+ <node pkg="rviz" type="rviz" name="rviz" args="-d $(find automatic-camera-pointcloud-calibration)/launch/pointcloud_display.rviz"></node>
 
 </launch>
 

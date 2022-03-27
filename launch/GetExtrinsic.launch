@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  
+    <rosparam param="init_value">  [0.0, -1.0, 0.0, 0.0,
+                                    0.0, 0.0, -1.0, 0.0,
+                                    1.0, 0.0, 0.0,  0.0] </rosparam>  <!-- init value of roatation matrix(3*3 on the left) and the translation(3*1 vector on the right) -->
+
+    <param name="intrinsic_path"    value="$(find automatic-camera-pointcloud-calibration)/data/parameters/intrinsic.txt" />  <!-- intrinsic file -->
+    <param name="extrinsic_path"    value="$(find automatic-camera-pointcloud-calibration)/data/parameters/extrinsic.txt" />  <!-- output extrinsic file -->
+    <param name="input_lidar_path"  value="$(find automatic-camera-pointcloud-calibration)/data/feature/corner_pointcloud.txt" />  <!-- get the lidar corner data -->
+    <param name="input_photo_path"  value="$(find automatic-camera-pointcloud-calibration)/data/feature/corner_photo.txt" />  <!-- get the photo corner data -->
+    <param name="output_error_path"  value="$(find automatic-camera-pointcloud-calibration)/data/parameters/reprojection_error.txt" />  <!-- get the reprojection error -->
+    <param name="error_threshold"    type="int" value="12" />  <!-- the threshold of the reprojection error -->
+
+    <node pkg="automatic-camera-pointcloud-calibration" name="GetExtrinsic" type="GetExtrinsic" output="screen"></node>
+
+</launch>
+
