@@ -82,6 +82,11 @@ to facilitate the identification of the calibration board, and to ensure that th
 from the calibration board, probably 3-5m are best. Each board could provide 16 points, but it is recommended
 to use 2-3 boards, and it is better to arrange them with different positions and different angles.
 
+The calibration board is recommended to be acrylic plate or foam, with 4 square holes symmetrically placed. 
+You can take the following as an example:
+
+
+
 - **During the 3.2 and 3.3, make sure the scene is unchanged and the platform remains still**
 
 #### 3.2 Connect the LiDAR and record the rosbag
