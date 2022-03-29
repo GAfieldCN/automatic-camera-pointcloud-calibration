@@ -113,25 +113,33 @@ Please connect and turn on the camera, then take the photo.
 
 After collecting all the data, put photos in data/photo folder; LiDAR rosbag(i.e., lidar_msg.bag) in data/lidar folder.
 
-### Step4: Calibration data acquisition
+### 4 Calibration Process
 
-#### 4.1 Parameter setting
+#### 4.1 Intrinsic Setting
 
-Firstly save the intrinsic parameters and distortion correct parameters in the path data/parameters/intrinsic.txt. Distortion corresponds to five distortion correction parameters, which in order are: k1, k2 (RadialDistortion), p1, p2(TangentialDistortion) and k3, normally set 0 by default. An example is given as intrinsic_example.txt. 
+Firstly save the intrinsic parameters and distortion correct parameters in the path data/parameters/intrinsic.txt. 
+Distortion corresponds to five distortion correction parameters, which in order are: k1, k2 (RadialDistortion), p1, p2(TangentialDistortion) and k3, normally set 0 by default. 
+An example is given as intrinsic.txt. 
 
-#### 4.2 Acquire the corner coordinates in photo
+#### 4.2 Photo Feature Extraction
 
-1. Configure the launch file cornerPhoto.launch, and run
+Configure the launch file cornerPhoto.launch, adjust the parameters to get expected results
 
 ```
-roslaunch camera_lidar_calibration cornerPhoto.launch
+roslaunch automatic-camera-pointcloud-calibration feature_extraction_camera.launch
 ```
 
-2. The program will open the corresponding photo. Close the **source** window, and click 4 points on the **src** window. Then enter the four corners “x y” in order, and there must be a space between x and y (for example: “635 487”). After that, enter “0 0” to end the input process. The program will calculate four points in more precise float type, and save them in default output path data/corner_photo.txt. Then press a random key to end the whole process. 
-3. To select at least 12 points, this process must be repeated at least 3 times. However, to avoid confusion, we highly recommend you to finish step 4.3 to find out the corresponding 4 points of LiDAR, then come back to select another 4 points. 
+The program will open the corresponding photo and show the rectified image. Tap any key to enter the default process, i.e., you can remove the false-detected contours. 
+If you want to remove the 5 6 7 8 contours, enter
+
+```
+5 6 7 8 0
+```
+And if the contours are correct, tap 0 and enter to finish the process, then the program will calculate the features in more precise float type, 
+and save them in default output path data/feature/corner_photo.txt. Then press a random key to end the whole process. 
 
 
-#### 4.3 Acquire the corner coordinates in point cloud
+#### 4.3 Point Cloud Feature Extraction
 
 1. Open a terminal (make sure roscore is running)
 ```
