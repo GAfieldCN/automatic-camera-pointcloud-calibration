@@ -77,35 +77,30 @@ Using MATLAB, OpenCV or Kalibr etc. to get intrinsic parameters.
 
 #### 3.1 Calibration scene preparation
 
+The calibration board is recommended to be acrylic plate or foam, with 4 square holes symmetrically placed. 
+You can take the following as an example:
+
+![Aaron Swartz](https://raw.githubusercontent.com/GAfieldCN/automatic-camera-pointcloud-calibration/master/figs/board.png?token=GHSAT0AAAAAABS5QE7UPNFPC72A7UDVVI7YYSCOFUQ)
+
 It will be better to select a relatively empty environment for the calibration scene
 to facilitate the identification of the calibration board, and to ensure that the LiDAR has a certain distance
 from the calibration board, probably 3-5m are best. Each board could provide 16 points, but it is recommended
 to use 2-3 boards, and it is better to arrange them with different positions and different angles.
 
-The calibration board is recommended to be acrylic plate or foam, with 4 square holes symmetrically placed. 
-You can take the following as an example:
-
-
-
 - **During the 3.2 and 3.3, make sure the scene is unchanged and the platform remains still**
 
 #### 3.2 Connect the LiDAR and record the rosbag
-connect the Lidar and see the pointcloud
+connect the Lidar and verify the pointcloud
 ```
 roslaunch livox_ros_driver livox_lidar_rviz.launch
 ```
 
-Record the rosbag to calibrate
-```
-rosbag record -O lidar_rviz.bag /livox/lidar
-```
-
-Normally, 30 seconds is enough. After recording, shut down all terminals, and we need to record another bag for pointcloud projection.
+shut down the terminal, and we need to start the livox_custom_msg 
 ```
 roslaunch livox_ros_driver livox_lidar_msg.launch
 ```
 
-Record the second rosbag for 30 seconds
+Record the rosbag for about 20 seconds (Too large bag might take a while to compute)
 ```
 rosbag record -O lidar_msg.bag /livox/lidar
 ```
@@ -116,7 +111,7 @@ Please connect and turn on the camera, then take the photo.
 
 #### 3.4 Collect the photo and LiDAR data
 
-After collecting all the data, put photos in data/photo folder; LiDAR rosbag(the second, i.e., lidar_msg.bag) in data/lidar folder.
+After collecting all the data, put photos in data/photo folder; LiDAR rosbag(i.e., lidar_msg.bag) in data/lidar folder.
 
 ### Step4: Calibration data acquisition
 
