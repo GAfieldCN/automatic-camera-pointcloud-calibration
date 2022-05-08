@@ -39,13 +39,13 @@ std::vector<size_t> sort_indexes(const std::vector<T> &v) {
 
 point_type point;
 vector<point_type> points, temp_points, frontier_points, plane, filtered_points1, filtered_points2;
-vector<double> plane_param;
+vector<double> plane_param(8);
 vector< vector<double> > plane_params;
 
 vector<livox_ros_driver::CustomMsg> lidar_datas;
 int threshold_lidar, FOV_vertical, FOV_horizontal;
 string input_bag_path, input_photo_path, output_path, intrinsic_path, extrinsic_path, temp_path;
-double square_length, board_length;
+double square_length, board_length, margin_step, margin_threshold;
 int plane_size, line_size;
 
 void SetMarker(visualization_msgs::Marker &point, int id, int type, float scale, float r, float g, float b)
@@ -90,11 +90,11 @@ void loadPointcloudFromROSBag(const string& bag_path) {
     for (const rosbag::MessageInstance& m : view) {
         livox_ros_driver::CustomMsg livoxCloud = *(m.instantiate<livox_ros_driver::CustomMsg>()); // message type
         lidar_datas.push_back(livoxCloud);
-        if (lidar_datas.size() > (threshold_lidar/24000 + 1)) {
+        if (lidar_datas.size() > (threshold_lidar)) {
             break;
         }
     }
-    cout << "Loading rosbag successes" << endl;
+    ROS_INFO("Loading rosbag successes!");
 }
 
 void getParameters() {
@@ -140,6 +140,14 @@ void getParameters() {
         cout << "Can not get the value of line_size" << endl;
         exit(1);
     }
+    if (!ros::param::get("margin_step", margin_step)) {
+        cout << "Can not get the value of margin_step" << endl;
+        exit(1);
+    }
+    if (!ros::param::get("margin_threshold", margin_threshold)) {
+        cout << "Can not get the value of margin_threshold" << endl;
+        exit(1);
+    }
     cout << "Loading parameters done!" << endl;
 }
 
@@ -154,12 +162,12 @@ bool ver_sort (vector <double> a, vector <double> b){
 vector<int> RANSAC_Plane(int size, int size_old, double threshold_dis, double threshold_std, long int max_iter, int allow_num){
 
     double a, b, c, d;
-    double out_sum, out_accum;
+    double out_sum_x, out_sum_y, out_sum_z, out_accum_x, out_accum_y, out_accum_z;
     vector<int> index, index_out;
     while (--max_iter)
     {
         index.clear();
-        out_sum = 0, out_accum = 0;
+        out_sum_x = 0, out_sum_y = 0, out_sum_z = 0, out_accum_x = 0, out_accum_y = 0, out_accum_z = 0;
         //cout << "iter = " << max_iter << endl;
         for (int k = 0; k < size; ++k) {
             index.push_back(rand() % filtered_points2.size());
@@ -192,24 +200,30 @@ vector<int> RANSAC_Plane(int size, int size_old, double threshold_dis, double th
         }
 
         for (auto it = 0; it < index.size(); it++) {
-            out_sum += filtered_points2[index[it]].y;
+            out_sum_x += filtered_points2[index[it]].x;
+            out_sum_y += filtered_points2[index[it]].y;
+            out_sum_z += filtered_points2[index[it]].z;
         }
 
         for (auto it = 0; it < index.size(); it++) {
-            out_accum += pow(filtered_points2[index[it]].y - (out_sum / index.size()), 2);
+            out_accum_x += pow(filtered_points2[index[it]].x - (out_sum_x / index.size()), 2);
+            out_accum_y += pow(filtered_points2[index[it]].y - (out_sum_y / index.size()), 2);
+            out_accum_z += pow(filtered_points2[index[it]].z - (out_sum_z / index.size()), 2);
         }
 
-        auto out_std = sqrt(out_accum / (index.size() - 1));
+        auto out_std_x = sqrt(out_accum_x / (index.size() - 1));
+        auto out_std_y = sqrt(out_accum_y / (index.size() - 1));
+        auto out_std_z = sqrt(out_accum_z / (index.size() - 1));
 
-        if (index.size() > size_old && out_std < threshold_std) {
+        if (index.size() > size_old && out_std_y < threshold_std) {
             plane_param.clear();
             plane_param.push_back(a);plane_param.push_back(b);plane_param.push_back(c);plane_param.push_back(d);
+            plane_param.push_back(out_std_x);plane_param.push_back(out_std_y); plane_param.push_back(out_std_z); plane_param.push_back(filtered_points2[index[0]].y);
             size_old = index.size();
             index_out = index;
         }
     }
 
-    plane_params.push_back(plane_param);
     return index_out;
 }
 
@@ -279,8 +293,8 @@ int main(int argc, char **argv) {
     getParameters();
     srand(time(0));
 
-    ros::Publisher points_pub = nh.advertise<geometry_msgs::Point>( "/pointcloud", 10000 );
-    ros::Publisher pub_marker = nh.advertise<visualization_msgs::Marker>("/points_visualization", 1000);
+    ros::Publisher points_pub = nh.advertise<geometry_msgs::Point>( "/pointcloud", 1000000 );
+    ros::Publisher pub_marker = nh.advertise<visualization_msgs::Marker>("/points_visualization", 1000000);
     ros::Publisher pub_frontier = nh.advertise<visualization_msgs::Marker>("/points_frontier", 1000);
     ros::Publisher pub_filter = nh.advertise<visualization_msgs::Marker>("/points_filter", 1000);
     ros::Publisher pub_plane = nh.advertise<visualization_msgs::Marker>("/planes", 1000);
@@ -299,13 +313,14 @@ int main(int argc, char **argv) {
     visualization_msgs::Marker marker_pointcloud, marker_frontier, marker_filter, marker_plane[plane_size], marker_line[line_size*plane_size], marker_corners;
     vector<visualization_msgs::Marker> marker_planes;
 
-    SetMarker(marker_pointcloud, 0, 7, 0.01, 255, 200, 8);
+    SetMarker(marker_pointcloud, 0, 7, 0.03, 255, 200, 8);
     SetMarker(marker_frontier, 0, 7, 0.01, 255, 0, 0);
     SetMarker(marker_filter, 0, 7, 0.01, 0, 255, 0);
     SetMarker(marker_corners, 0, 7, 0.03, 255, 10, 10);
 
     loadPointcloudFromROSBag(input_bag_path);
     int myCount = 0;
+    ROS_INFO("Pointcloud package number is %zu", lidar_datas.size());
     for (size_t i = 0; i < lidar_datas.size(); ++i) {
         for (size_t j = 0; j < lidar_datas[i].point_num; ++j) {
             // visualization
@@ -334,23 +349,22 @@ int main(int argc, char **argv) {
     /***************************
      ** Detect frontier points **
      ****************************/
-    double step = 0.2;
-    cout << "Detecting frontier points from the raw data...This may take a while..." << endl;
+    cout << "**-- Detecting frontier points from the raw data...This may take a while... --**" << endl;
     cout << "********** Processing" << " ---> "  << "0%  " << "**********" << endl;
 
     double count = 10;
-    for (double j = - FOV_horizontal; j < FOV_horizontal; j += step){
+    for (double j = - FOV_horizontal; j < FOV_horizontal; j += margin_step){
         if ( (int)j == -FOV_horizontal + count * FOV_horizontal * 0.02) {
             cout << "********** Processing" << " ---> " << count << "% " << "**********" << endl;
             count = 10.0 + count;
         }
 
-        for (double k = - FOV_vertical; k < FOV_vertical; k += step) {
+        for (double k = - FOV_vertical; k < FOV_vertical; k += margin_step) {
             //cout << "new line : " << "j = " << j << " k = " << k << endl;
             temp_points.clear();
             for (size_t i = 0; i < points.size(); i++){
                 if (points[i].range > 1){
-                    if ((abs(points[i].azimuth - j) <= 1.4*step) && (abs(points[i].elevation - k) <= 1.4*step)){
+                    if ((abs(points[i].azimuth - j) <= margin_threshold*margin_step) && (abs(points[i].elevation - k) <= margin_threshold*margin_step)){
                         temp_points.push_back(points[i]);
                         for (int q = 0; q < temp_points.size(); q ++){
                         }
@@ -384,19 +398,23 @@ int main(int argc, char **argv) {
 //                    cout << "max = " << max << endl;
 //                    cout << "min = " << min << endl;
 //                    cout << "range = " << range << endl;
-                    frontier.x = temp_points[min_index].x;
-                    frontier.y = temp_points[min_index].y;
-                    frontier.z = temp_points[min_index].z;
-                    frontier_points.push_back(temp_points[min_index]);
-                    marker_frontier.points.push_back(frontier);
+                    for (int w = 0; w < temp_points.size(); w++) {
+                        if (abs(temp_points[w].range - min) < 0.02) {
+                            frontier.x = temp_points[w].x;
+                            frontier.y = temp_points[w].y;
+                            frontier.z = temp_points[w].z;
+                            frontier_points.push_back(temp_points[w]);
+                            marker_frontier.points.push_back(frontier);
+                        }
+                    }
                 }
             }
         }
     }
-    cout << "Detecting frontier points done!"<< endl;
+    cout << "**-- Detecting frontier points done! --**"<< endl;
 
-    step = 5;
-    cout << "Starting to filter points..."<< endl;
+    double step = 5;
+    cout << "**-- Starting to filter points... --**"<< endl;
     for (double j = -FOV_horizontal; j < FOV_horizontal; j += step) {
         for (double k = -FOV_vertical; k < FOV_vertical; k += step) {
             temp_points.clear();
@@ -464,7 +482,7 @@ int main(int argc, char **argv) {
         }
     }
 
-//    //! Debug process. If you want to skip the frontier detection, comment line 307-465, and uncomment the following
+//    //! Debug process. If you want to skip the frontier detection, comment line 321-482, and uncomment the following
 //    std::ifstream fin(temp_path.c_str(), std::ios::in);
 //    char line[1024]={0};
 //    std::string xx = "";
@@ -504,13 +522,31 @@ int main(int argc, char **argv) {
      ** Detect plane using RANSAC **
      ****************************/
 
-    cout << "Detecting planes..." << endl;
+    cout << "**-- Detecting planes... --**" << endl;
     vector<int> index;
     vector <vector <int> > plane_index;
     for (int i = 0; i < plane_size; i++){
         index.clear();
         plane.clear();
-        index = RANSAC_Plane(3, 3, 0.02, 0.2, 10000, 1000);
+        vector<double> tmp(8);
+        vector<int> temp;
+        plane_param.swap(tmp);
+
+        while (plane_param[4] > 0.04 || plane_param[4] == 0){
+            plane_param.clear();
+            index.swap(temp);
+            index = RANSAC_Plane(3, 3, 0.05, 0.2, 10000, 1000);
+
+            if(plane_param[4] > 0.04){
+                sort(index.begin(), index.end());
+
+                for (int p = index.size() - 1 ; p > - 1; p --){
+                    filtered_points2.erase(filtered_points2.begin() + index[p]);
+                }
+            }
+        }
+
+        plane_params.push_back(plane_param);
         cout << "Plane " << i+1 << " has " << index.size() << " points" << endl;
         plane_index.push_back(index);
         SetMarker(marker_plane[i], i, 7, 0.015, rand() % 255, rand() % 255, rand() % 255);
@@ -542,47 +578,71 @@ int main(int argc, char **argv) {
     double horizontal_sum[plane_size], vertical_sum[plane_size];
     for (int i = 0; i < plane_size; i++){
         horizontal_sum[i] = 0; vertical_sum[i] = 0;
-        for (int j = 0; j < line_size; j++){
+        int hor_snt = 0, ver_cnt = 0, j = 0;
+
+        while (j < line_size){
+            //cout << hor_snt << " " << ver_cnt << " " << j << endl;
             line_param.clear();
             line_param = RANSAC_Line(planes[i], plane_params[i], 2, 2, 0.01, 0.2, 10000);
-            //cout << "Plane "  << i+1 << ", line " << j+1 << " direction:\t";
-            //printf("%.3f, %.3f, %.3f\n", line_param[3],line_param[4],line_param[5]);
-            //cout << "Point:\t";
-            //printf("%.3f, %.3f, %.3f, num = %.1f\n", line_param[0],line_param[1],line_param[2],line_param[6]);
+            cout << "Plane "  << i+1 << ", line " << j+1 << " direction:\t";
+            printf("%.3f, %.3f, %.3f\n", line_param[3],line_param[4],line_param[5]);
+            cout << "Point:\t";
+            printf("%.3f, %.3f, %.3f, num = %.1f\n", line_param[0],line_param[1],line_param[2],line_param[6]);
 
-            if (abs(line_param[5])-1 > -0.2) {
+            if (abs(line_param[5])-1 > -0.1 && ver_cnt < line_size/2) {
                 if (line_param[5] > 0) {vertical_line_params[i].push_back(line_param);}
                 else if (line_param[5] < 0) {line_param[3] = -line_param[3];line_param[4] = -line_param[4];line_param[5] = -line_param[5];
                     vertical_line_params[i].push_back(line_param);}
+                ver_cnt += 1;
                 vertical_sum[i] += line_param[6];
+                point_plane.x = line_param[0];
+                point_plane.y = line_param[1];
+                point_plane.z = line_param[2];
+                SetMarker(marker_line[i*line_size+j], i*line_size+j, 4, 0.01, rand() % 255, rand() % 255, rand() % 255);
+                marker_line[i*line_size+j].points.push_back(point_plane);
+                double line_step = 0.5;
+                for (int k = 0 ; k < 5; k++){
+                    point_plane.x = line_param[0] + line_step * line_param[3];
+                    point_plane.y = line_param[1] + line_step * line_param[4];
+                    point_plane.z = line_param[2] + line_step * line_param[5];
+                    marker_line[i*line_size+j].points.push_back(point_plane);
+                    point_plane.x = line_param[0] - line_step * line_param[3];
+                    point_plane.y = line_param[1] - line_step * line_param[4];
+                    point_plane.z = line_param[2] - line_step * line_param[5];
+                    marker_line[i*line_size+j].points.push_back(point_plane);
+                }
+                j += 1;
             }
 
-            if (abs(line_param[4])-1 > -0.2) {
+            else if (abs(line_param[4])-1 > -0.1 && hor_snt < line_size/2) {
                 if (line_param[4] > 0) {horizontal_line_params[i].push_back(line_param);}
                 else if (line_param[4] < 0) {line_param[3] = -line_param[3];line_param[4] = -line_param[4];line_param[5] = -line_param[5];
                     horizontal_line_params[i].push_back(line_param);}
+                hor_snt += 1;
                 horizontal_sum[i] += line_param[6];
-            }
-
-            point_plane.x = line_param[0];
-            point_plane.y = line_param[1];
-            point_plane.z = line_param[2];
-            SetMarker(marker_line[i*line_size+j], i*line_size+j, 4, 0.01, rand() % 255, rand() % 255, rand() % 255);
-            marker_line[i*line_size+j].points.push_back(point_plane);
-            double line_step = 0.5;
-            for (int k = 0 ; k < 5; k++){
-                point_plane.x = line_param[0] + line_step * line_param[3];
-                point_plane.y = line_param[1] + line_step * line_param[4];
-                point_plane.z = line_param[2] + line_step * line_param[5];
+                point_plane.x = line_param[0];
+                point_plane.y = line_param[1];
+                point_plane.z = line_param[2];
+                SetMarker(marker_line[i*line_size+j], i*line_size+j, 4, 0.01, rand() % 255, rand() % 255, rand() % 255);
                 marker_line[i*line_size+j].points.push_back(point_plane);
-                point_plane.x = line_param[0] - line_step * line_param[3];
-                point_plane.y = line_param[1] - line_step * line_param[4];
-                point_plane.z = line_param[2] - line_step * line_param[5];
-                marker_line[i*line_size+j].points.push_back(point_plane);
+                double line_step = 0.5;
+                for (int k = 0 ; k < 5; k++){
+                    point_plane.x = line_param[0] + line_step * line_param[3];
+                    point_plane.y = line_param[1] + line_step * line_param[4];
+                    point_plane.z = line_param[2] + line_step * line_param[5];
+                    marker_line[i*line_size+j].points.push_back(point_plane);
+                    point_plane.x = line_param[0] - line_step * line_param[3];
+                    point_plane.y = line_param[1] - line_step * line_param[4];
+                    point_plane.z = line_param[2] - line_step * line_param[5];
+                    marker_line[i*line_size+j].points.push_back(point_plane);
+                }
+                j += 1;
             }
         }
+        //cout << "j = " << j << endl;
     }
 
+    // obtain the weighted direction vector
     Eigen::Vector3d horizontal[plane_size], vertical[plane_size], plane_norm[plane_size];
     double hor_x, hor_y, hor_z, ver_x, ver_y, ver_z;
     for (int i = 0; i < plane_size; i++){
@@ -595,7 +655,7 @@ int main(int argc, char **argv) {
         horizontal[i] << hor_x, hor_y, hor_z;
         plane_norm[i] << plane_params[i][0], plane_params[i][1],plane_params[i][2];
         plane_norm[i] = plane_norm[i].normalized();
-        //cout << "Plane " << i+1 << " normal vector:\t" << plane_norm[i].transpose() << endl;
+        cout << "Plane " << i+1 << " normal vector:\t" << plane_norm[i].transpose() << endl;
         horizontal[i] = (horizontal[i] - (horizontal[i].dot(plane_norm[i]) * plane_norm[i] / pow(plane_norm[i].norm(),2))).normalized();
         cout << "Plane " << i+1 << " horizontal vector:\t" << horizontal[i].transpose() << endl;
 
@@ -610,26 +670,26 @@ int main(int argc, char **argv) {
         cout << "Plane " << i+1 << " vertical vector:\t" << vertical[i].transpose() << endl;
     }
 
-
+    // remove obvious non-parallel lines
     Eigen::Vector3d line_direction;
     for (int i = 0; i < plane_size; i++){
-        if (vertical_line_params[i].size() > 8 || horizontal_line_params[i].size() > 8){
-            ROS_WARN("Line extraction may fail! Too many lines are detected!");
-            ROS_WARN("Please try again or decrease the line size!");
-        }
-
+//        if (vertical_line_params[i].size() > 8 || horizontal_line_params[i].size() > 8){
+//            ROS_WARN("Line extraction may fail! Too many lines are detected!");
+//            ROS_WARN("Please try again or decrease the line size!");
+//        }
         double parallel_min = 1; int ho_index, ver_index;
-        if (horizontal_line_params[i].size() == 7){
+        if (horizontal_line_params[i].size() >= 7){
             for (int j = 0; j < horizontal_line_params[i].size(); j++){
                 line_direction << horizontal_line_params[i][j][3], horizontal_line_params[i][j][4], horizontal_line_params[i][j][5];
                 auto parallel = horizontal[i].dot(line_direction);
+                //cout << "parallel = " << parallel << endl;
                 if (parallel < parallel_min) parallel_min = parallel; ho_index = j;
             }
             if (parallel_min < 0.99) horizontal_line_params[i].erase(horizontal_line_params[i].begin() + ho_index);
         }
 
         parallel_min = 1;
-        if (vertical_line_params[i].size() == 7){
+        if (vertical_line_params[i].size() >= 7){
             for (int j = 0; j < vertical_line_params[i].size(); j++) {
                 line_direction
                         << vertical_line_params[i][j][3], vertical_line_params[i][j][4], vertical_line_params[i][j][5];
@@ -637,7 +697,6 @@ int main(int argc, char **argv) {
                 if (parallel < parallel_min) parallel_min = parallel; ver_index = j;
             }
             if (parallel_min < 0.99) vertical_line_params[i].erase(vertical_line_params[i].begin() + ver_index);
-
         }
     }
 
@@ -652,7 +711,7 @@ int main(int argc, char **argv) {
                                           horizontal_line_params[i][j][0], horizontal_line_params[i][j][1],
                                           horizontal_line_params[i][j][2],
                                           horizontal[i][0], horizontal[i][1], horizontal[i][2]);
-                if (dis_p2l < square_length / 3) {
+                if (dis_p2l < square_length / 2) {
                     idx_rm_hor.push_back(horizontal_line_params[i][j][6] < horizontal_line_params[i][k][6] ? j : k);
                 }
                 if (dis_p2l > board_length * 0.9) {
@@ -663,6 +722,9 @@ int main(int argc, char **argv) {
         }
 
         sort(idx_rm_hor.begin(), idx_rm_hor.end());
+        for (int v = 0; v < idx_rm_hor.size(); v++){
+            idx_rm_hor.erase(unique(idx_rm_hor.begin(), idx_rm_hor.end()), idx_rm_hor.end());
+        }
         for (int p = idx_rm_hor.size() - 1 ; p > - 1; p --){
             horizontal_line_params[i].erase(horizontal_line_params[i].begin() + idx_rm_hor[p]);
         }
@@ -675,7 +737,7 @@ int main(int argc, char **argv) {
                                           vertical_line_params[i][t][0], vertical_line_params[i][t][1],
                                           vertical_line_params[i][t][2],
                                           vertical[i][0], vertical[i][1], vertical[i][2]);
-                if (dis_p2l < square_length / 3) {
+                if (dis_p2l < square_length / 2) {
                     idx_rm_ver.push_back(abs(vertical_line_params[i][t][6]) < abs(vertical_line_params[i][k][6]) ? t : k);
                 }
                 if (dis_p2l > board_length*0.9) {
@@ -687,6 +749,9 @@ int main(int argc, char **argv) {
         }
 
         sort(idx_rm_ver.begin(), idx_rm_ver.end());
+        for (int v = 0; v < idx_rm_ver.size(); v++){
+            idx_rm_ver.erase(unique(idx_rm_ver.begin(), idx_rm_ver.end()), idx_rm_ver.end());
+        }
         for (int p = idx_rm_ver.size() - 1 ; p > - 1; p --){
             vertical_line_params[i].erase(vertical_line_params[i].begin() + idx_rm_ver[p]);
         }
@@ -703,12 +768,13 @@ int main(int argc, char **argv) {
     // Situation that only one side of the board is detected
     vector<Eigen::Vector3d> horizontal_points[plane_size], vertical_points[plane_size];
     for (int i = 0; i < plane_size; i++){
-        if (vertical_line_params[i].size() == 5 ){
+        cout << horizontal_line_params[i].size() << " " << vertical_line_params[i].size() <<endl;
+        if (vertical_line_params[i].size() >= 5 ){
             vertical_line_params[i].erase(vertical_line_params[i].begin() +
                                           (vertical_line_params[i][0][6] > vertical_line_params[i][4][6] ? 0 : 4));
         }
 
-        if (horizontal_line_params[i].size() == 5 ){
+        if (horizontal_line_params[i].size() >= 5 ){
             horizontal_line_params[i].erase(horizontal_line_params[i].begin() +
                                             (horizontal_line_params[i][0][6] > horizontal_line_params[i][4][6] ? 0 : 4));
         }
@@ -729,7 +795,7 @@ int main(int argc, char **argv) {
             vertical_points[i].push_back(temp);
         }
     }
-    cout << "Line detection done! Extracting corners..." << endl;
+    cout << "**-- Line detection done! Extracting corners... --**" << endl;
 
     /******************************
     ****** Corner Extraction ******
@@ -798,7 +864,7 @@ int main(int argc, char **argv) {
             marker_result[i*4+j+4*plane_size].points.push_back(point_plane);
         }
     }
-    cout << "Corner extraction succeeded!" << endl;
+    cout << "**-- Corner extraction succeeded! --**" << endl;
     ROS_INFO("Result saved in %s", output_path.c_str());
 
 /*************************************

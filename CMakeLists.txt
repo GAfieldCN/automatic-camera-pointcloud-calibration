@@ -70,3 +70,9 @@ target_link_libraries(feature_extraction_camera ${catkin_LIBRARIES} ${OpenCV_LIB
 
 add_executable(feature_extraction_pointcloud src/feature_extraction_pointcloud.cpp src/common.h)
 target_link_libraries(feature_extraction_pointcloud ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${CERES_LIBRARIES})
+
+add_executable(feature_manual_photo src/feature_manual_camera.cpp src/common.h)
+target_link_libraries(feature_manual_photo ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${CERES_LIBRARIES})
+
+add_executable(feature_manual_pointcloud src/feature_manual_pointcloud.cpp src/common.h)
+target_link_libraries(feature_manual_pointcloud ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${CERES_LIBRARIES})

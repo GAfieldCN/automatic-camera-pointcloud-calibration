@@ -159,13 +159,18 @@ int main(int argc, char **argv)
 
     float distance, distanceMax;
     Point cornerPoint1, cornerPoint2, cornerPoint3, cornerPoint4, point_add;
+    Point2f plane_center, contour_center;
     vector <Point> cornerPoint4_Candidates(3);
     size_t conP_i1 = 0, conP_i2 = 0, conP_i3 = 0, conP_i_add, flag = 0;
     vector <vector<size_t> > sorted_corners(RectContours.size());
     vector <Point2f> final_corners;
+    vector <Point2f> planes_sort[4];
     vector <vector<Point2f> > results;
     vector <vector<Point2f> > planes[plane_size];
-    vector<Point2f> result[plane_size];
+
+    vector <Point2f> plane_centers;
+    vector <Point2f> contour_centers[plane_size];
+    vector <Point2f> result[plane_size];
 
 
     /***************************
@@ -404,17 +409,51 @@ int main(int argc, char **argv)
     for (i = 0; i < plane_size; i++){
         planes[i].push_back(results[sorted_index[4*i]]);planes[i].push_back(results[sorted_index[4*i+1]]);
         planes[i].push_back(results[sorted_index[4*i+2]]);planes[i].push_back(results[sorted_index[4*i+3]]);
-        result[i].push_back(planes[i][0][0]);result[i].push_back(planes[i][0][1]);
-        result[i].push_back(planes[i][1][0]);result[i].push_back(planes[i][1][1]);
-        result[i].push_back(planes[i][0][3]);result[i].push_back(planes[i][0][2]);
-        result[i].push_back(planes[i][1][3]);result[i].push_back(planes[i][1][2]);
-        result[i].push_back(planes[i][2][0]);result[i].push_back(planes[i][2][1]);
-        result[i].push_back(planes[i][3][0]);result[i].push_back(planes[i][3][1]);
-        result[i].push_back(planes[i][2][3]);result[i].push_back(planes[i][2][2]);
-        result[i].push_back(planes[i][3][3]);result[i].push_back(planes[i][3][2]);
-
     }
 
+    for (i = 0; i < plane_size; i++){
+        plane_center.x = 0; plane_center.y = 0;
+        for (int k = 0; k < planes[i].size(); k++){
+            contour_center.x = 0, contour_center.y = 0;
+            for (int j = 0; j < planes[i][k].size(); j++) {
+                plane_center.x += planes[i][k][j].x;
+                plane_center.y += planes[i][k][j].y;
+                contour_center.x += planes[i][k][j].x;
+                contour_center.y += planes[i][k][j].y;
+            }
+            contour_center.x = contour_center.x / 4;
+            contour_center.y = contour_center.y / 4;
+            cout << "cont " << contour_center << endl;
+            contour_centers[i].push_back(contour_center);
+        }
+        plane_center.x = plane_center.x / 16;
+        plane_center.y = plane_center.y / 16;
+        cout << "plane " << plane_center <<endl;
+        plane_centers.push_back(plane_center);
+    }
+
+    for (i = 0; i < plane_size; i++){
+        for (int k = 0; k < contour_centers[i].size(); k++){
+            if (contour_centers[i][k].x <= plane_centers[i].x && contour_centers[i][k].y <= plane_centers[i].y)
+            {planes_sort[0] = planes[i][k];}
+            else if (contour_centers[i][k].x <= plane_centers[i].x && contour_centers[i][k].y >= plane_centers[i].y)
+            {planes_sort[1] = planes[i][k];}
+            else if (contour_centers[i][k].x >= plane_centers[i].x && contour_centers[i][k].y <= plane_centers[i].y)
+            {planes_sort[2] = planes[i][k];}
+            else if (contour_centers[i][k].x >= plane_centers[i].x && contour_centers[i][k].y >= plane_centers[i].y)
+            {planes_sort[3] = planes[i][k];}
+            else
+                ROS_WARN("Corner sort process may fail! Please check the input...");
+        }
+        result[i].push_back(planes_sort[0][0]);result[i].push_back(planes_sort[0][1]);
+        result[i].push_back(planes_sort[1][0]);result[i].push_back(planes_sort[1][1]);
+        result[i].push_back(planes_sort[0][3]);result[i].push_back(planes_sort[0][2]);
+        result[i].push_back(planes_sort[1][3]);result[i].push_back(planes_sort[1][2]);
+        result[i].push_back(planes_sort[2][0]);result[i].push_back(planes_sort[2][1]);
+        result[i].push_back(planes_sort[3][0]);result[i].push_back(planes_sort[3][1]);
+        result[i].push_back(planes_sort[2][3]);result[i].push_back(planes_sort[2][2]);
+        result[i].push_back(planes_sort[3][3]);result[i].push_back(planes_sort[3][2]);
+    }
 
     // Write data
     ofstream outfile(output_name.c_str());

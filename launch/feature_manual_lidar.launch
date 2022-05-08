@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  
+    <param name="output_path"    value="$(find automatic-camera-pointcloud-calibration)/data/feature/feature_manual_lidar.txt" />  <!-- output file -->
+    <param name="selected_number"    value="10" />  <!-- number of points to be selected, please accord with the camera corner points -->
+    <param name="threshold_lidar"       type="int" value="200" />  <!-- the limit of messages to transfer to the pcd file, 80 means maximum 80 messages of lidar -->
+    <param name="input_bag_path"        value="$(find automatic-camera-pointcloud-calibration)/data/lidar/1_board_lidar_eastgate_left.bag" />  <!-- rosbag to give the lidar info -->
+
+    <node pkg="automatic-camera-pointcloud-calibration" name="feature_manual_pointcloud" type="feature_manual_pointcloud" output="screen"></node>
+    <!-- <node name="rviz" pkg="rviz" type="rviz" respawn="true" args="-d $(find automatic-camera-pointcloud-calibration)/launch/feature_manual.rviz"/> -->
+
+
+</launch>
+

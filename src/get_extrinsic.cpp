@@ -138,7 +138,7 @@ int main(int argc, char **argv) {
     }
 
     ceres::Solver::Options options;
-    options.linear_solver_type = ceres::DENSE_SCHUR;
+    options.linear_solver_type = ceres::DENSE_QR;
     options.minimizer_progress_to_stdout = true;
     options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
 

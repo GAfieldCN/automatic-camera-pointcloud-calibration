@@ -108,7 +108,7 @@ void getParameters() {
         exit(1);
     }
     if (!ros::param::get("extrinsic_path", extrinsic_path)) {
-        cout << "Can not get the value o以下程序节点中如果想修改launch文件，需要到src/calibration/launch文件夹中找对应的launch文件。f extrinsic_path" << endl;
+        cout << "Can not get the value of extrinsic_path" << endl;
         exit(1);
     }
 }
