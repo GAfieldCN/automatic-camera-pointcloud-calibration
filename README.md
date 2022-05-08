@@ -3,6 +3,8 @@
 This package provides a method for automatically calibrating the extrinsic parameters between 
 pointcloud sensors (especially Livox LiDAR) and camera.
 
+![image](https://github.com/GAfieldCN/automatic-camera-pointcloud-calibration/blob/master/figs/east-gate.png)
+
 ## 1 Environment configuration
 
 (The following calibration process is under the Ubuntu 64-bit 18.04 and ROS melodic environment )
@@ -134,6 +136,7 @@ the **max_area** determine the contour area to be extracted.
 roslaunch automatic-camera-pointcloud-calibration feature_extraction_camera.launch
 ```
 
+![image](https://github.com/GAfieldCN/automatic-camera-pointcloud-calibration/blob/master/figs/camera.png)
 The program will open the corresponding photo and show the rectified image. Tap any key to enter the 
 debug process, i.e., you can remove the false-detected contours. 
 If you want to remove the 5 6 7 8 contours, enter
@@ -144,6 +147,7 @@ If you want to remove the 5 6 7 8 contours, enter
 And if the contours are correct, tap 0 and enter to finish the process, then the program will calculate the features in more precise float type, 
 and save them in default output path data/feature/corner_photo.txt. Then press a random key to end the whole process. 
 
+![image](https://github.com/GAfieldCN/automatic-camera-pointcloud-calibration/blob/master/figs/camera_result.png)
 
 ### 4.3 Point Cloud Feature Extraction
 
@@ -155,6 +159,7 @@ Then, run the command
 ```
 roslaunch automatic-camera-pointcloud-calibration feature_extraction_pointcloud.launch
 ```
+![image](https://github.com/GAfieldCN/automatic-camera-pointcloud-calibration/blob/master/figs/lidar.png)
 
 The detected corners will be saved in the default output path data/feature/corner_pointcloud.txt.
 
@@ -188,6 +193,7 @@ Configure the launch file feature_manual_camera.launch, and run
 ```
 roslaunch automatic-camera-pointcloud-calibration feature_manual_camera.launch
 ```
+![image](https://github.com/GAfieldCN/automatic-camera-pointcloud-calibration/blob/master/figs/manual_camera.png)
 The result will be saved in the data folder.
 
 Then, configure the launch file feature_manual_lidar.launch, make sure the **selected_number**
@@ -197,6 +203,7 @@ equals to the photo corners you have just picked, and run
 roslaunch automatic-camera-pointcloud-calibration feature_manual_lidar.launch
 ```
 
+![image](https://github.com/GAfieldCN/automatic-camera-pointcloud-calibration/blob/master/figs/manual_lidar.png)
 Use the **publish point** in the rviz and click the corresponding points, the process will be 
 terminated when the total point reach the selected number.
 
@@ -208,14 +215,6 @@ Configure the launch file color_lidar_display.launch, and run
  roslaunch automatic-camera-pointcloud-calibration colorLidar.launch 
  ```
 
-The parameter **threshold_lidar** determines the density of pointclouds. 
 
 
-#### 6.3 Point cloud coloring
-
-Set the rosbag (**lidar_msg.bag**) and photo path in the colorLidar.launch file, run the command and check coloring rendering in the rviz.
-
-```
-roslaunch camera_lidar_calibration colorLidar.launch
-```
 # automatic-camera-pointcloud-calibration
