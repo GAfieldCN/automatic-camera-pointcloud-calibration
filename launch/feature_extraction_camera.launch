@@ -2,9 +2,9 @@
 <launch>
   
     <param name="intrinsic_path"    value="$(find automatic-camera-pointcloud-calibration)/data/parameters/intrinsic.txt" />  <!-- intrinsic file -->
-    <param name="input_photo_path"  value="$(find automatic-camera-pointcloud-calibration)/data/photo/xing.jpg" />  <!-- photo input -->
+    <param name="input_photo_path"  value="$(find automatic-camera-pointcloud-calibration)/data/photo/board_building.jpg" />  <!-- photo input -->
     <param name="output_path"        value="$(find automatic-camera-pointcloud-calibration)/data/feature/corner_photo.txt" />  <!-- file to save the photo corner -->
-    <param name="binary_threshold"        value="150" />  <!-- Change it when the binary process works not well! -->
+    <param name="binary_threshold"        value="160" />  <!-- Change it when the binary process works not well! -->
     <param name="min_area"        value="45" />  <!-- Depends on the pixel area of squares -->
     <param name="max_area"        value="100" />  <!-- Depends on the pixel area of squares -->
     <param name="rectangularity_preset"        value="0.9" />  <!-- minimal it when your squares are abnormal -->

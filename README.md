@@ -1,13 +1,13 @@
-## Automatic-Camera-Pointcloud-Calibration Manual
+# Automatic-Camera-Pointcloud-Calibration Manual
 
 This package provides a method for automatically calibrating the extrinsic parameters between 
 pointcloud sensors (especially Livox LiDAR) and camera.
 
-### 1 Environment configuration
+## 1 Environment configuration
 
 (The following calibration process is under the Ubuntu 64-bit 18.04 and ROS melodic environment )
 
-#### 1.1 Install Livox SDK and driver
+### 1.1 Install Livox SDK and driver
 
 Install [Livox SDK](https://github.com/Livox-SDK/Livox-SDK) and [livox_ros_driver](https://github.com/Livox-SDK/Livox-SDK-ROS). 
 You can skip this step if they are already installed. 
@@ -28,7 +28,7 @@ cd ws_livox
 catkin_make
 ```
 
-#### 1.2 Install dependencies
+### 1.2 Install dependencies
 
 You can skip this step if they are already installed.
 
@@ -38,7 +38,7 @@ You can skip this step if they are already installed.
 
 - [Ceres-solver installation](http://ceres-solver.org/)
 
-#### 1.3 Compile  source code of calibration
+### 1.3 Compile  source code of calibration
 
 ```
 # install calibration package
@@ -53,7 +53,7 @@ catkin_make
 source devel/setup.bash
 ```
 
-#### 1.4 Program nodes briefs
+### 1.4 Program nodes briefs
 
 This project includes the following nodes:
 
@@ -71,27 +71,28 @@ This project includes the following nodes:
 
 You can find the corresponding launch file in the launch folder if you want to modify any launch file.
 
-### 2 Calibration of camera intrinsic parameters
+## 2 Calibration of camera intrinsic parameters
 
 Using MATLAB, OpenCV or Kalibr etc. to get intrinsic parameters. 
 
-### 3 Preparations and data collections
+## 3 Preparations and data collections
 
-#### 3.1 Calibration scene preparation
+### 3.1 Calibration scene preparation
 
 The calibration board is recommended to be acrylic plate or foam, with 4 square holes symmetrically placed. 
 You can take the following as an example:
 
 ![image](https://github.com/GAfieldCN/automatic-camera-pointcloud-calibration/blob/master/figs/board.png)
 
-It will be better to select a relatively empty environment for the calibration scene
-to facilitate the identification of the calibration board, and to ensure that the LiDAR has a certain distance
-from the calibration board, probably 3-5m are best. Each board could provide 16 points, but it is recommended
-to use 2-3 boards, and it is better to arrange them with different positions and different angles.
+You should make sure that the boards have certain distance from the background objects, and ensure that the LiDAR has a certain distance
+from the calibration board, probably 3-5m is the best. Each board could provide 16 points, but it is recommended
+to use 2-3 boards and arrange them uniformly in the space with different positions.
 
 - **During the 3.2 and 3.3, make sure the scene is unchanged and the platform remains still**
 
-#### 3.2 Connect the LiDAR and record the rosbag
+### 3.2 Connect the LiDAR and record the rosbag
+Take the Livox LiDAR as an example (the authors have used the Livox Mid-70)
+
 connect the Lidar and verify the pointcloud
 ```
 roslaunch livox_ros_driver livox_lidar_rviz.launch
@@ -104,34 +105,37 @@ roslaunch livox_ros_driver livox_lidar_msg.launch
 
 Record the rosbag for about 20 seconds (Too large bag might take a while to compute)
 ```
-rosbag record -O lidar_msg.bag /livox/lidar
+rosbag record -o lidar /livox/lidar
 ```
 
-#### 3.3 Connect the camera and record
+### 3.3 Connect the camera and record
 
 Please connect and turn on the camera, then take the photo. 
 
-#### 3.4 Collect the photo and LiDAR data
+### 3.4 Collect the photo and LiDAR data
 
-After collecting all the data, put photos in data/photo folder; LiDAR rosbag(i.e., lidar_msg.bag) in data/lidar folder.
+After collecting all the data, put photos in data/photo folder; LiDAR rosbag in data/lidar folder.
 
-### 4 Calibration Process
+## 4 Calibration Process
 
-#### 4.1 Intrinsic Setting
+### 4.1 Intrinsic Setting
 
 Firstly save the intrinsic parameters and distortion correct parameters in the path data/parameters/intrinsic.txt. 
 Distortion corresponds to five distortion correction parameters, which in order are: k1, k2 (RadialDistortion), p1, p2(TangentialDistortion) and k3, normally set 0 by default. 
 An example is given as intrinsic.txt. 
 
-#### 4.2 Photo Feature Extraction
+### 4.2 Photo Feature Extraction
 
-Configure the launch file cornerPhoto.launch, adjust the parameters to get expected results
+Configure the launch file feature_extraction_camera.launch, make sure the **plane size** accords with the number of boards, and
+you might change the **binary_threshold** when the binary process works not well! Also, the **min_area** and
+the **max_area** determine the contour area to be extracted. 
 
 ```
 roslaunch automatic-camera-pointcloud-calibration feature_extraction_camera.launch
 ```
 
-The program will open the corresponding photo and show the rectified image. Tap any key to enter the default process, i.e., you can remove the false-detected contours. 
+The program will open the corresponding photo and show the rectified image. Tap any key to enter the 
+debug process, i.e., you can remove the false-detected contours. 
 If you want to remove the 5 6 7 8 contours, enter
 
 ```
@@ -141,65 +145,69 @@ And if the contours are correct, tap 0 and enter to finish the process, then the
 and save them in default output path data/feature/corner_photo.txt. Then press a random key to end the whole process. 
 
 
-#### 4.3 Point Cloud Feature Extraction
+### 4.3 Point Cloud Feature Extraction
 
-1. Open a terminal (make sure roscore is running)
-```
-rviz
-```
-In the **file** panel, choose **open config**, then select **display_lidar_points.rviz** in the folder. 
+Configure the launch file feature_extraction_pointcloud.launch, make sure the **plane size** accords with the number of boards, and
+**board_length** is the length of board(m), **square_length** is the length of holes(m). Adjust the **FOV** to fit your LiDAR, 
+but you can decrease the value to speed up the process as long as the boards are visible. 
 
-2. In where the rosbag **livox_rviz.bag** saved, open a terminal and run
-
+Then, run the command
 ```
-rosbag play livox_rviz.bag
-```
-The play process could be paused by tapping a space. 
-
-3. Open a new terminal to subscribe rostopic
-```
-rostopic echo /clicked_point
+roslaunch automatic-camera-pointcloud-calibration feature_extraction_pointcloud.launch
 ```
 
- 4. Find the corresponding 4 points, then choose **publish point** to publish them on the topic. They will be displayed on the termimal in step 3. 
+The detected corners will be saved in the default output path data/feature/corner_pointcloud.txt.
 
+## Step5: Extrinsic calculation
 
-5. Write the xyz coordinates in the data/corner_lidar.txt. An example format is also given. 
+### 5.1 Parameter setting
 
-Then, return to 4.2 to acquire another 4 points. 
-
-### Step5: Extrinsic calculation
-
-#### 5.1 Parameter setting
-
-Extrinsic calculation node will read the calibration data in data/corner_photo.txt and data/corner_lidar.txt to calculate the extrinsic parameters, the data needs to be saved in a specific format to be correctly read by this node. Referring to the figure below, only the data with more than 10 letters in one line will be read as a calculation data, the title such as the 1 2 3 4, lidar0 and 0.jpg will not be read as calculation data. The program will stop reading the data and start calculating when it reads blank lines.
+Extrinsic calculation node will read the calibration data in data/corner_photo.txt and data/corner_lidar.txt to calculate 
+the extrinsic parameters. The program will stop reading the data and start calculating when it reads blank lines.
 
 
 Before the calculation, check the calibration data to make sure that each line corresponds to the same corner and the data amount is the same.
 
-#### 5.2 Calculation node getExt1
+### 5.2 Optimization Process
 
-Configure the initial extrinsic value in the getExt1.launch file first, then run the command to calculate the extrinsic parameters.
+Configure the launch file GetExtrinsic.launch, and run
 
 ```
-roslaunch camera_lidar_calibration getExt1.launch
+roslaunch automatic-camera-pointcloud-calibration GetExtrinsic.launch 
 ```
 
 The cost of each iteration operation will be printed out on the terminal, and the result will be saved in the path data/parameters/extrinsic.txt in the format of homogeneous matrix. 
 
-### Step6: Results verification and related applications
+Note: if the calibration result seems incorrect(i.e., the following colorization works not well), but no error occurs during the optimization process, 
+which means the process has got into the local minimum trap. In that case, you should add some points manually by the following nodes.
 
-#### 6.1 Briefs
+### 5.3 (Optional) Manual feature extraction
 
-After obtaining extrinsic parameters, we can use two common applications to see the fusion result. The first one is the projection of the point cloud on the photo, the second one is the point cloud coloring.
-
-#### 6.2 projection of point cloud on the photo
-
-Set the rosbag (**lidar_msg.bag**)and photo path in the projectCloud.launch file, run the command to project a certain number of point cloud on the photo
+Configure the launch file feature_manual_camera.launch, and run
 
 ```
-roslaunch camera_lidar_calibration projectCloud.launch
+roslaunch automatic-camera-pointcloud-calibration feature_manual_camera.launch
 ```
+The result will be saved in the data folder.
+
+Then, configure the launch file feature_manual_lidar.launch, make sure the **selected_number**
+equals to the photo corners you have just picked, and run
+
+```
+roslaunch automatic-camera-pointcloud-calibration feature_manual_lidar.launch
+```
+
+Use the **publish point** in the rviz and click the corresponding points, the process will be 
+terminated when the total point reach the selected number.
+
+## Step6: Colorized point cloud
+
+Configure the launch file color_lidar_display.launch, and run
+
+```
+ roslaunch automatic-camera-pointcloud-calibration colorLidar.launch 
+ ```
+
 The parameter **threshold_lidar** determines the density of pointclouds. 
 
 

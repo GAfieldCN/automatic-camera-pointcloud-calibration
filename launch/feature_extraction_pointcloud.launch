@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
 
-    <param name="input_bag_path"        value="$(find automatic-camera-pointcloud-calibration)/data/lidar/11_board_lidar_xingzheng.bag" />
+    <param name="input_bag_path"        value="$(find automatic-camera-pointcloud-calibration)/data/lidar/4_board_lidar_redwall.bag" />
     <!-- <param name="input_bag_path"        value="/home/ljh/3.bag" /> rosbag file -->
     <param name="temp_path"           value="$(find automatic-camera-pointcloud-calibration)/data/temp.txt" />  <!-- path to save filtered points -->
     <param name="output_path"           value="$(find automatic-camera-pointcloud-calibration)/data/feature/corner_pointcloud.txt" />  <!-- path to save the results -->

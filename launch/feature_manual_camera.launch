@@ -2,8 +2,7 @@
 <launch>
   
     <param name="intrinsic_path"    value="$(find automatic-camera-pointcloud-calibration)/data/parameters/intrinsic.txt" />  <!-- intrinsic file -->
-    <param name="input_photo_path"  value="/home/ljh/catkin_ws/src/livox_camera_calib-master/result/opt.png" />  <!-- photo to find the corner -->
-  <!--  <param name="input_photo_path"  value="$(find automatic-camera-pointcloud-calibration)/data/photo/east_gate.jpg" />  <!- - photo to find the corner --> -->
+    <param name="input_photo_path"  value="$(find automatic-camera-pointcloud-calibration)/data/photo/board_building.jpg" />  <!-- photo to find the corner -->
     <param name="ouput_path"        value="$(find automatic-camera-pointcloud-calibration)/data/feature/manual_photo.txt" />  <!-- file to save the photo corner -->
     
     <node pkg="automatic-camera-pointcloud-calibration" name="cornerPhoto" type="cornerPhoto" output="screen"></node>
