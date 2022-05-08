@@ -61,9 +61,11 @@ This project includes the following nodes:
 
 - feature_extraction_pointcloud - obtain the corner of the LiDAR
 
-- GetExtrinsic - optimization to get the extrinsic parameters
+- feature_manual_camera - obtain the corners manually
 
-- projectCloud - project the LiDAR point cloud on the photo
+- feature_manual_lidar - obtain the lidar corners manually
+
+- GetExtrinsic - optimization to get the extrinsic parameters
 
 - colorLidar - LiDAR point cloud colorized visualization
 
@@ -80,7 +82,7 @@ Using MATLAB, OpenCV or Kalibr etc. to get intrinsic parameters.
 The calibration board is recommended to be acrylic plate or foam, with 4 square holes symmetrically placed. 
 You can take the following as an example:
 
-![Aaron Swartz](https://raw.githubusercontent.com/GAfieldCN/automatic-camera-pointcloud-calibration/master/figs/board.png?token=GHSAT0AAAAAABS5QE7UPNFPC72A7UDVVI7YYSCOFUQ)
+![image](https://github.com/GAfieldCN/automatic-camera-pointcloud-calibration/blob/master/figs/board.png)
 
 It will be better to select a relatively empty environment for the calibration scene
 to facilitate the identification of the calibration board, and to ensure that the LiDAR has a certain distance
