@@ -215,6 +215,6 @@ Configure the launch file color_lidar_display.launch, and run
  roslaunch automatic-camera-pointcloud-calibration colorLidar.launch 
  ```
 
-
+![image](https://github.com/GAfieldCN/automatic-camera-pointcloud-calibration/blob/master/figs/color.png)
 
 # automatic-camera-pointcloud-calibration
