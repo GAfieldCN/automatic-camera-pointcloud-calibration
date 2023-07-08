@@ -56,12 +56,6 @@ include_directories(
 add_executable(GetExtrinsic src/get_extrinsic.cpp src/common.h)
 target_link_libraries(GetExtrinsic ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${CERES_LIBRARIES})
 
-add_executable(getExt2 src/cam_lid_external2.cpp src/common.h)
-target_link_libraries(getExt2 ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${CERES_LIBRARIES})
-
-add_executable(projectCloud src/projectCloud.cpp src/common.h)
-target_link_libraries(projectCloud ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
-
 add_executable(colorLidar src/color_lidar_display.cpp src/common.h)
 target_link_libraries(colorLidar ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${CERES_LIBRARIES})
 
